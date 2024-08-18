@@ -1,0 +1,25 @@
+def huber_loss(f_values, g_values, delta=1.0):
+    # Вычисление Huber Loss
+    error = f_values - g_values
+    is_small_error = np.abs(error) <= delta
+    squared_loss = 0.5 * error ** 2
+    linear_loss = delta * (np.abs(error) - 0.5 * delta)
+    return np.mean(np.where(is_small_error, squared_loss, linear_loss))
+	
+def mse_loss(f_values, g_values):
+    # Вычисление среднеквадратичной ошибки
+    return np.mean((f_values - g_values) ** 2)
+	
+def max_absolute_error(f_values, g_values):
+    # Вычисление максимальной абсолютной ошибки
+    return np.max(np.abs(f_values - g_values))
+	
+def log_loss(f_values, g_values):
+    # Вычисление логистической функции потерь
+    epsilon = 1e-15  # чтобы избежать вычисления логарифма от нуля
+    g_values = np.clip(g_values, epsilon, 1 - epsilon)  # Ограничение значений g(x)
+    return -np.mean(f_values * np.log(g_values) + (1 - f_values) * np.log(1 - g_values))
+	
+def hinge_loss(f_values, g_values):
+    # Вычисление hinge loss
+    return np.mean(np.maximum(0, 1 - f_values * g_values))

@@ -1,0 +1,63 @@
+import numpy as np
+
+def f(x):
+    # Пример функции f(x), принимающей значения -1 и 1 с резкими пиками и константными участками
+    return np.sign(np.sin(x) + 0.3 * np.sin(5 * x))
+
+def g(x, params):
+    # Пример функции g(x), зависящей от параметров, тоже будет принимать значения -1 и 1
+    a, b, c = params
+    return np.sign(a * np.sin(b * x + c))
+
+def hinge_loss(f_values, g_values):
+    # Вычисление hinge loss
+    return np.mean(np.maximum(0, 1 - f_values * g_values))
+
+def smoothness_penalty(f_values, g_values, weight=0.5):
+    # Вычисление штрафа за изменения между соседними значениями
+    diff_f = np.diff(f_values)
+    diff_g = np.diff(g_values)
+    penalty = np.mean((diff_f - diff_g) ** 2)
+    return weight * penalty
+
+def combined_loss(f_values, g_values, weight=0.5):
+    # Объединенная функция потерь
+    return hinge_loss(f_values, g_values) + smoothness_penalty(f_values, g_values, weight)
+
+def gradient_descent_with_momentum(f, g, x_values, params, learning_rate=0.01, iterations=1000, weight=0.5, momentum=0.9):
+    # Инициализация момента
+    velocity = np.zeros_like(params)
+    
+    for i in range(iterations):
+        # Вычисляем значения функций f и g в точках x
+        f_values = f(x_values)
+        g_values = g(x_values, params)
+        
+        # Вычисляем текущую ошибку
+        loss = combined_loss(f_values, g_values, weight)
+        
+        # Вычисляем градиент ошибки по каждому параметру
+        gradients = np.zeros_like(params)
+        for j in range(len(params)):
+            params_shifted = np.copy(params)
+            params_shifted[j] += 1e-5
+            g_values_shifted = g(x_values, params_shifted)
+            loss_shifted = combined_loss(f_values, g_values_shifted, weight)
+            gradients[j] = (loss_shifted - loss) / 1e-5
+        
+        # Обновляем момент и параметры
+        velocity = momentum * velocity - learning_rate * gradients
+        params += velocity
+        
+        # Выводим прогресс
+        if i % 100 == 0:
+            print(f"Iteration {i}: Loss = {loss}, Params = {params}")
+    
+    return params
+
+# Пример использования
+x_values = np.linspace(0, 2 * np.pi, 100)
+initial_params = np.array([1.0, 1.0, 0.0])  # Начальные параметры для g(x)
+optimized_params = gradient_descent_with_momentum(f, g, x_values, initial_params, weight=0.5, momentum=0.9)
+
+print("Optimized parameters:", optimized_params)

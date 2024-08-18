@@ -1,0 +1,49 @@
+import numpy as np
+
+def f(x):
+    # Пример функции f(x)
+    return np.sin(x)
+
+def g(x, params):
+    # Пример функции g(x), зависящей от параметров
+    # Здесь params - это параметры, которые нужно оптимизировать
+    a, b, c = params
+    return a * np.sin(b * x + c)
+
+def mse_loss(f_values, g_values):
+    # Вычисление среднеквадратичной ошибки
+    return np.mean((f_values - g_values) ** 2)
+
+def gradient_descent(f, g, x_values, params, learning_rate=0.01, iterations=1000):
+    for i in range(iterations):
+        # Вычисляем значения функций f и g в точках x
+        f_values = f(x_values)
+        g_values = g(x_values, params)
+        
+        # Вычисляем текущую ошибку
+        loss = mse_loss(f_values, g_values)
+        
+        # Вычисляем градиент ошибки по каждому параметру
+        gradients = np.zeros_like(params)
+        for j in range(len(params)):
+            params_shifted = np.copy(params)
+            params_shifted[j] += 1e-5
+            g_values_shifted = g(x_values, params_shifted)
+            loss_shifted = mse_loss(f_values, g_values_shifted)
+            gradients[j] = (loss_shifted - loss) / 1e-5
+        
+        # Обновляем параметры
+        params -= learning_rate * gradients
+        
+        # Выводим прогресс
+        if i % 100 == 0:
+            print(f"Iteration {i}: Loss = {loss}, Params = {params}")
+    
+    return params
+
+# Пример использования
+x_values = np.linspace(0, 2 * np.pi, 100)
+initial_params = np.array([1.0, 1.0, 0.0])  # Начальные параметры для g(x)
+optimized_params = gradient_descent(f, g, x_values, initial_params)
+
+print("Optimized parameters:", optimized_params)

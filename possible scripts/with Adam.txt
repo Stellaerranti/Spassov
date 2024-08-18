@@ -1,0 +1,14 @@
+from scipy.optimize import minimize
+
+def adam_optimizer(f, g, x_values, params, weight=0.5, iterations=1000):
+    def loss_function(params):
+        f_values = f(x_values)
+        g_values = g(x_values, params)
+        return combined_loss(f_values, g_values, weight)
+    
+    result = minimize(loss_function, params, method='Adam', options={'maxiter': iterations})
+    return result.x
+
+# Пример использования Adam
+optimized_params_adam = adam_optimizer(f, g, x_values, initial_params, weight=0.5)
+print("Optimized parameters with Adam:", optimized_params_adam)
