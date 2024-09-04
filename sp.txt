@@ -1,0 +1,35 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import quad
+from scipy.optimize import curve_fit
+from scipy.optimize import minimize
+from numpy import exp
+from numpy import sin
+from numpy import tanh
+
+def e(z):
+	return sin(x)
+    #return 1-fraction_data[np.where(depth == z)[0]]
+	
+def H(z):
+    return -tanh(((c2+c1)*(z-(c2+c1)/2))/(c2-c1))
+	
+def l_diff(z,s,a1,b1,a2,b2):
+    return e(z) * (a1*exp(-a1*s+b1))/(1+exp(-a1*s+b1))**2 + (1-e(z)) * (a2*exp(-a2*s+b2))/(1+exp(-a2*s+b2))**2 
+	
+def integral(s,z,a1,a2,b1,b2):
+    return H(z-s)*l_diff(z,s,a1,b1,a2,b2)
+	
+def functional_integration(z,a1,a2,b1,b2):        
+    return quad(integral, 0, z, args=(z,a1,a2,b1,b2))[0]
+	
+def get_magnetisation(z,params):
+
+    a1,a2,b1,b2 = params
+    
+    vec_expint = np.vectorize(functional_integration)
+    M = vec_expint(z,a1,a2,b1,b2)
+    
+    return tanh(M*10**3)
+
+
