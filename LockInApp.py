@@ -4,42 +4,186 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
+from scipy.integrate import quad
+from scipy.optimize import curve_fit
+from numpy import exp
+from numpy import sin
+from numpy import tanh
+from scipy.optimize import minimize
+from scipy.optimize import dual_annealing
+from scipy.optimize import differential_evolution
+
+depth_obs = None
+fraction_data = None
+polarity = None
+
+c1 = 73.4
+c2 = 74.
+
+def get_lock_depth_from_params(params):
+    a1,a2,b1,b2 = params
+    lock_in_depth = [(b1-2)/a1,(b1+2)/a1,(b2-2)/a2,(b2+2)/a2]
+    return lock_in_depth
+
+def get_params_from_depths(lock_in_depth):
+    l0,l1,l2,l3 = lock_in_depth
+    params = [4/(l1-l0),4/(l3-l2),2*(l1+l0)/(l1-l0),2*(l3+l2)/(l3-l2)]
+    return params
+
+def e(z):
+    #return 0.4
+    #return sin(z*16+1.5)/2 + 0.5
+    idx = np.where(np.isclose(depth_obs, z))[0]
+    idx = idx[0]
+    
+    return fraction_data[idx]
+
+def H(z):
+    return -tanh(((c2+c1)*(z-(c2+c1)/2))/(c2-c1))
+
+def l (z,s,a1,b1,a2,b2):
+    return e(z)/(1+exp(-a1*s+b1)) + (1-e(z))/(1+exp(-a2*s+b2))
+
+def l_diff(z,s,a1,b1,a2,b2):
+    return e(z) * (a1*exp(-a1*s+b1))/(1+exp(-a1*s+b1))**2 + (1-e(z)) * (a2*exp(-a2*s+b2))/(1+exp(-a2*s+b2))**2 
+
+def integral(s,z,a1,a2,b1,b2):
+    return H(z-s)*l_diff(z,s,a1,b1,a2,b2)
+
+def functional_integration(z,a1,a2,b1,b2):        
+    return quad(integral, 0, z, args=(z,a1,a2,b1,b2))[0]
+
+def get_magnetisation(z,params):
+
+    a1,a2,b1,b2 = params
+    
+    vec_expint = np.vectorize(functional_integration)
+    M = vec_expint(z,a1,a2,b1,b2)
+    
+    return tanh(M*10**3)
+
+def huber_loss(params, z_data, M_obs, delta=1.0):
+    # Unpack parameters
+    a1, a2, b1, b2 = params
+    
+    # Compute predicted magnetization
+    M_pred = get_magnetisation(z_data, params)
+    
+    # Compute the residuals
+    residuals = M_obs - M_pred
+    
+    # Compute Huber loss
+    loss = np.where(np.abs(residuals) <= delta,
+                    0.5 * residuals ** 2,
+                    delta * (np.abs(residuals) - 0.5 * delta))
+    
+    return np.mean(loss)
+
+def random_restarts_optimization(loss_function, initial_guess, bounds, depth, M_obs, n_restarts=10):
+    solutions = []
+    for i in range(n_restarts):
+        
+        # Generate a random initial guess within the bounds
+        random_initial = [np.random.uniform(low, high) for low, high in bounds]
+        result = minimize(loss_function, random_initial, args=(depth, M_obs), method='L-BFGS-B', bounds=bounds)
+        solutions.append(result.x)
+        print(f"Iteration: {i+1}")
+    return solutions
+
+def adjust_param_ranges(param_low, param_high, epsilon=1e-1):
+    # Проверка и коррекция границ параметров
+    if param_low > param_high:
+        param_low, param_high = param_high, param_low
+    elif param_low == param_high:
+        param_high += epsilon  # Раздвинуть границы, если они совпадают
+    return param_low, param_high
+
+def convert_depths_to_params_ranges(depth_ranges):
+    # Извлечение границ глубин
+    l0_low, l0_high, l1_low, l1_high, l2_low, l2_high, l3_low, l3_high = depth_ranges
+    
+    # Рассчитываем параметры для границ глубин
+    params_low = get_params_from_depths([l0_low, l1_low, l2_low, l3_low])
+    params_high = get_params_from_depths([l0_high, l1_high, l2_high, l3_high])
+    
+    # Извлекаем диапазоны параметров
+    a1_low, a2_low, b1_low, b2_low = params_low
+    a1_high, a2_high, b1_high, b2_high = params_high
+    
+    # Коррекция диапазонов параметров
+    a1_low, a1_high = adjust_param_ranges(a1_low, a1_high)
+    a2_low, a2_high = adjust_param_ranges(a2_low, a2_high)
+    b1_low, b1_high = adjust_param_ranges(b1_low, b1_high)
+    b2_low, b2_high = adjust_param_ranges(b2_low, b2_high)
+    
+    # Возвращаем скорректированные диапазоны параметров
+    return [
+         (a1_low, a1_high),
+         (a2_low, a2_high),
+         (b1_low, b1_high),
+         (b2_low, b2_high)]
+    
 
 # Функция для открытия и загрузки файла как массив NumPy
 def load_file():
+    global depth_obs, fraction_data, polarity
     file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
     if file_path:
         try:
-            # Загрузка файла как массив NumPy
-            data = np.loadtxt(file_path)
-            messagebox.showinfo("Файл загружен", f"Данные из файла:\n{data}")
-            # Действия с загруженными данными
-            process_loaded_data(data)
+            depth_obs, fraction_data, polarity = np.loadtxt(file_path,unpack = True)
+            #fraction_data = 1 - fraction_data
+            #messagebox.showinfo("Файл загружен","Файл загружен")
+            process_loaded_data(depth_obs, fraction_data, polarity)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось загрузить файл: {e}")
 
-# Пример функции для обработки загруженных данных
-def process_loaded_data(data):
-    # Пример обработки данных: просто выводим их в консоль
-    print("Загруженные данные:")
-    print(data)
+def process_loaded_data(depth_obs, fraction_data, polarity):
+    for ax in axs:
+        ax.clear()
+        
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_title("Field polarity", fontsize=8)
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_ylabel('Depth')
+
+
+    axs[1].plot(fraction_data,depth_obs)
+    axs[1].set_title("e(z)", fontsize=8)
+    axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+
+    axs[2].plot(polarity, depth_obs)
+    axs[2].set_title("Observed polarity", fontsize=8)
+    axs[2].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[3].set_title("Modeled polarity", fontsize=8)
+    axs[3].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[4].set_title("Lock-in-function", fontsize=8)
+    axs[4].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    for ax in axs[1:]:
+        ax.tick_params(left=False)
+        ax.set_yticklabels([])
+
+    figure.subplots_adjust(wspace=0.1)
+    canvas.draw()
+
+    #print(data)
 
 # Функция для открытия окна настроек
 def open_options():
-    # Окно настроек
     options_window = tk.Toplevel(root)
     options_window.title("Настройки")
 
-    # Параметры для настройки
     tk.Label(options_window, text="Функция потерь:").grid(row=0, column=0)
-    loss_function_combobox = ttk.Combobox(options_window, values=["MSE", "MAE", "Cross-Entropy"])
+    loss_function_combobox = ttk.Combobox(options_window, values=["Huber loss", "Hinge loss"])
     loss_function_combobox.grid(row=0, column=1)
-    loss_function_combobox.set("MSE")
+    loss_function_combobox.set("Huber loss")
 
     tk.Label(options_window, text="Оптимизация:").grid(row=1, column=0)
-    optimization_combobox = ttk.Combobox(options_window, values=["SGD", "Adam", "RMSprop"])
+    optimization_combobox = ttk.Combobox(options_window, values=["L-BFGS-B", "Dual anneling"])
     optimization_combobox.grid(row=1, column=1)
-    optimization_combobox.set("SGD")
+    optimization_combobox.set("L-BFGS-B")
 
     def apply_settings():
         selected_loss_function = loss_function_combobox.get()
@@ -49,54 +193,85 @@ def open_options():
     apply_button = tk.Button(options_window, text="Применить", command=apply_settings)
     apply_button.grid(row=2, columnspan=2, pady=10)
 
-# Функция для обновления графиков
+def update_graphs(params):
+
+    a1,a2,b1,b2 = params    
+
+    for ax in axs:
+        ax.clear()
+
+    axs[0].plot(H(depth_obs), depth_obs)
+    axs[0].set_title("Field polarity", fontsize=8)
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_ylabel('Depth')
+
+
+    axs[1].plot(fraction_data,depth_obs)
+    axs[1].set_title("e(z)", fontsize=8)
+    axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+
+    axs[2].plot(polarity, depth_obs)
+    axs[2].set_title("Observed polarity", fontsize=8)
+    axs[2].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[3].plot(get_magnetisation(depth_obs, params),depth_obs)
+    axs[3].set_title("Modeled polarity", fontsize=8)
+    axs[3].set_ylim(depth_obs[-1],depth_obs[0])
+
+    axs[4].plot(l(depth_obs[0],depth_obs,a1,b1,a2,b2),depth_obs)
+    axs[4].set_title("Lock-in-function", fontsize=8)
+    axs[4].set_ylim(depth_obs[-1],depth_obs[0])
+
+
+    for ax in axs[1:]:
+        ax.tick_params(left=False)
+        ax.set_yticklabels([])
+
+    figure.subplots_adjust(wspace=0.1)
+    canvas.draw()
+
 def compute():
+    global c1,c2
+    
+    d0_low = float(entry_d0_low.get())
+    d0_high = float(entry_d0_high.get())
+    d1_low = float(entry_d1_low.get())
+    d1_high = float(entry_d1_high.get())
+    d2_low = float(entry_d2_low.get())
+    d2_high = float(entry_d2_high.get())
+    d3_low = float(entry_d3_low.get())
+    d3_high = float(entry_d3_high.get())
+    c1 = float(entry_с1.get())
+    c2 = float(entry_с2.get())
+    calculation_times = int(entry_calc_times.get())
+    initial_params = [1.0, 1.0, 1.0, 1.0]
+    
+    #bounds = np.column_stack((get_params_from_depths([d0_low,d1_low,d2_low,d3_low]),get_params_from_depths([d0_high,d1_high,d2_high,d3_high])))
+    #depth_ranges = (d0_low,d0_high,d1_low,d1_high,d2_low,d2_high,d3_low,d3_high)
+    
+    #bounds = convert_depths_to_params_ranges(depth_ranges)
+    
+    bounds = [(d0_low, d0_high),  # a1
+          (d1_low, d1_high),  # a2
+          (d2_low, d2_high),    # b1
+          (d3_low, d3_high)] 
+   
     try:
-        # Получение параметров
-        d0_low = float(entry_d0_low.get())
-        d0_high = float(entry_d0_high.get())
-        d1_low = float(entry_d1_low.get())
-        d1_high = float(entry_d1_high.get())
-        d2_low = float(entry_d2_low.get())
-        d2_high = float(entry_d2_high.get())
-        d3_low = float(entry_d3_low.get())
-        d3_high = float(entry_d3_high.get())
-        calculation_times = int(entry_calc_times.get())
+        
+        solutions = random_restarts_optimization(huber_loss, initial_params, bounds, depth_obs, polarity, n_restarts=calculation_times)
 
-        # Пример данных
-        x = np.linspace(0, 10, 100)
-        y1 = d0_low * np.sin(d0_high * x)
-        y2 = d1_low * np.cos(d1_high * x)
-        y3 = d2_low * np.sin(d2_high * x) * np.cos(d3_high * x)
-        y4 = np.sin(x) + np.cos(x)
+        # Очистка предыдущих решений
+        for widget in solution_frame.winfo_children():
+            widget.destroy()
 
-        # Очистка графиков
-        for ax in axs:
-            ax.clear()
+        # Замена placeholder на кнопки решений
+        for i, (sols) in enumerate(solutions):
+            d0,d1,d2,d3 = get_lock_depth_from_params(sols)
+            
+            button = tk.Button(solution_frame, text=f"Решение {i+1}: d0={d0:.2f}, d1={d1:.2f}, d2={d2:.2f}, d3={d3:.2f}",
+                               command=lambda d0=d0, d1=d1, d2=d2, d3=d3: update_graphs(sols))
+            button.pack()
 
-        # Построение графиков с общей вертикальной осью Y
-        axs[0].plot(y1, x)
-        axs[0].set_title("y = d0_low * sin(d0_high * x)", fontsize=8)
-        axs[0].set_ylabel('Common X')  # Подпись оси Y только у левого графика
-
-        axs[1].plot(y2, x)
-        axs[1].set_title("y = d1_low * cos(d1_high * x)", fontsize=8)
-
-        axs[2].plot(y3, x)
-        axs[2].set_title("y = d2_low * sin(d2_high * x) * cos(d3_high * x)", fontsize=8)
-
-        axs[3].plot(y4, x)
-        axs[3].set_title("y = sin(x) + cos(x)", fontsize=8)
-
-        # Установка общей вертикальной оси Y для всех графиков
-        for ax in axs[1:]:
-            ax.tick_params(left=False)  # Отключаем ticks по оси Y для всех графиков, кроме левого
-            ax.set_yticklabels([])  # Убираем подписи значений вертикальной оси
-
-        # Уменьшение отступов между графиками
-        figure.subplots_adjust(wspace=0.1)  # Небольшое расстояние между графиками
-
-        canvas.draw()
     except ValueError:
         messagebox.showerror("Ошибка", "Введите корректные числовые параметры.")
 
@@ -104,10 +279,9 @@ def compute():
 root = tk.Tk()
 root.title("Приложение с графиками")
 
-# Создание панели инструментов
 menu_bar = tk.Menu(root)
 file_menu = tk.Menu(menu_bar, tearoff=0)
-file_menu.add_command(label="Open", command=load_file)  # Изменено на load_file
+file_menu.add_command(label="Open", command=load_file)
 menu_bar.add_cascade(label="File", menu=file_menu)
 
 options_menu = tk.Menu(menu_bar, tearoff=0)
@@ -115,99 +289,119 @@ options_menu.add_command(label="Settings", command=open_options)
 menu_bar.add_cascade(label="Options", menu=options_menu)
 root.config(menu=menu_bar)
 
-# Левые элементы управления
 left_frame = tk.Frame(root)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-# Ввод параметров
-tk.Label(left_frame, text="d0 low:").grid(row=0, column=0)
+tk.Label(left_frame, text="a1 low:").grid(row=0, column=0)
 entry_d0_low = tk.Entry(left_frame)
 entry_d0_low.grid(row=0, column=1)
 entry_d0_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d0 high:").grid(row=0, column=2)
+tk.Label(left_frame, text="a1 high:").grid(row=0, column=2)
 entry_d0_high = tk.Entry(left_frame)
 entry_d0_high.grid(row=0, column=3)
 entry_d0_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="d1 low:").grid(row=1, column=0)
+tk.Label(left_frame, text="a2 low:").grid(row=1, column=0)
 entry_d1_low = tk.Entry(left_frame)
 entry_d1_low.grid(row=1, column=1)
 entry_d1_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d1 high:").grid(row=1, column=2)
+tk.Label(left_frame, text="a2 high:").grid(row=1, column=2)
 entry_d1_high = tk.Entry(left_frame)
 entry_d1_high.grid(row=1, column=3)
 entry_d1_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="d2 low:").grid(row=2, column=0)
+tk.Label(left_frame, text="b1 low:").grid(row=2, column=0)
 entry_d2_low = tk.Entry(left_frame)
 entry_d2_low.grid(row=2, column=1)
 entry_d2_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d2 high:").grid(row=2, column=2)
+tk.Label(left_frame, text="b1 high:").grid(row=2, column=2)
 entry_d2_high = tk.Entry(left_frame)
 entry_d2_high.grid(row=2, column=3)
 entry_d2_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="d3 low:").grid(row=3, column=0)
+tk.Label(left_frame, text="b2 low:").grid(row=3, column=0)
 entry_d3_low = tk.Entry(left_frame)
 entry_d3_low.grid(row=3, column=1)
 entry_d3_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d3 high:").grid(row=3, column=2)
+tk.Label(left_frame, text="b2 high:").grid(row=3, column=2)
 entry_d3_high = tk.Entry(left_frame)
 entry_d3_high.grid(row=3, column=3)
 entry_d3_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="Calculation times:").grid(row=4, column=0, columnspan=2)
+tk.Label(left_frame, text="с1").grid(row=4, column=0)
+entry_с1 = tk.Entry(left_frame)
+entry_с1.grid(row=4, column=1)
+entry_с1.insert(0, "1.0")
+
+tk.Label(left_frame, text="с2").grid(row=4, column=2)
+entry_с2 = tk.Entry(left_frame)
+entry_с2.grid(row=4, column=3)
+entry_с2.insert(0, "1.0")
+
+tk.Label(left_frame, text="Calculation times:").grid(row=5, column=0, columnspan=2)
 entry_calc_times = tk.Entry(left_frame)
-entry_calc_times.grid(row=4, column=2, columnspan=2)
+entry_calc_times.grid(row=5, column=2, columnspan=2)
 entry_calc_times.insert(0, "10")
 
 compute_button = tk.Button(left_frame, text="Compute", command=compute)
-compute_button.grid(row=5, columnspan=4, pady=10)
+compute_button.grid(row=6, columnspan=4, pady=10)
 
-# Глобальные параметры
+# Рамка для отображения решений
+solution_frame = tk.Frame(root)
+solution_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+
+# Placeholder для области решений
+placeholder_label = tk.Label(solution_frame, text="Выберите решение", font=("Arial", 12), fg="grey")
+placeholder_label.pack()
+
 param1 = 1.0
 param2 = 1.0
 
-# Создание фигуры и графиков с общей вертикальной осью Y
-figure = Figure(figsize=(10, 4))  # Увеличена ширина для горизонтального размещения
-ax1 = figure.add_subplot(1, 4, 1)
-axs = [ax1,
-       figure.add_subplot(1, 4, 2, sharey=ax1),
-       figure.add_subplot(1, 4, 3, sharey=ax1),
-       figure.add_subplot(1, 4, 4, sharey=ax1)]
+figure = Figure(figsize=(12, 4))
+ax1 = figure.add_subplot(1, 5, 1)
 
-# Заполнение графиков начальными данными
+axs = [ax1,
+       figure.add_subplot(1, 5, 2),
+       figure.add_subplot(1, 5, 3),
+       figure.add_subplot(1, 5, 4),
+       figure.add_subplot(1, 5, 5)]
+
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x)
 y2 = np.cos(x)
 y3 = np.sin(x) * np.cos(x)
 y4 = np.sin(x) + np.cos(x)
+y5 = np.tan(x)
 
-# Построение графиков с начальными данными
 axs[0].plot(y1, x)
-axs[0].set_title("y = sin(x)", fontsize=8)
-axs[0].set_ylabel('Common X')
+axs[0].set_title("Field polarity", fontsize=8)
+axs[0].set_ylabel('Depth')
+#axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
+
 
 axs[1].plot(y2, x)
-axs[1].set_title("y = cos(x)", fontsize=8)
+axs[1].set_title("e(z)", fontsize=8)
+
 
 axs[2].plot(y3, x)
-axs[2].set_title("y = sin(x) * cos(x)", fontsize=8)
+axs[2].set_title("Observed polarity", fontsize=8)
 
 axs[3].plot(y4, x)
-axs[3].set_title("y = sin(x) + cos(x)", fontsize=8)
+axs[3].set_title("Modeled polarity", fontsize=8)
 
-# Установка параметров для отступов
-figure.subplots_adjust(wspace=0.1)  # Устанавливаем небольшое расстояние между графиками
+axs[4].plot(y5, x)
+axs[4].set_title("Lock-in-function", fontsize=8)
 
-# Убираем метки и значения вертикальной оси для графиков, кроме первого
+figure.subplots_adjust(wspace=0.1)
+
+
 for ax in axs[1:]:
-    ax.tick_params(left=False)  # Убираем ticks по оси Y
-    ax.set_yticklabels([])  # Убираем подписи значений вертикальной оси
+    ax.tick_params(left=False)
+    ax.set_yticklabels([])
 
 canvas = FigureCanvasTkAgg(figure, root)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
