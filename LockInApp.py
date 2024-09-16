@@ -5,7 +5,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 from scipy.integrate import quad
-from scipy.optimize import curve_fit
 from numpy import exp
 from numpy import sin
 from numpy import tanh
@@ -44,6 +43,9 @@ def H(z):
 def l (z,s,a1,b1,a2,b2):
     return e(z)/(1+exp(-a1*s+b1)) + (1-e(z))/(1+exp(-a2*s+b2))
 
+def l_custom (e_value,s,a1,b1,a2,b2):
+    return e_value/(1+exp(-a1*s+b1)) + (1-e_value)/(1+exp(-a2*s+b2))
+
 def l_diff(z,s,a1,b1,a2,b2):
     return e(z) * (a1*exp(-a1*s+b1))/(1+exp(-a1*s+b1))**2 + (1-e(z)) * (a2*exp(-a2*s+b2))/(1+exp(-a2*s+b2))**2 
 
@@ -78,6 +80,42 @@ def huber_loss(params, z_data, M_obs, delta=1.0):
                     delta * (np.abs(residuals) - 0.5 * delta))
     
     return np.mean(loss)
+
+def on_optimization_change(event):
+    selected_option = optimization_combobox.get()
+    if selected_option == "Brute-Force":
+        entry_calc_times_label.config(text="Step")
+        entry_calc_times_label.grid(row=5, column=1, columnspan=2)
+    else:
+        entry_calc_times_label.config(text="Calculation times")    
+        entry_calc_times_label.grid(row=5, column=1, columnspan=2)
+
+# Функция для открытия окна настроек
+def open_options():
+    options_window = tk.Toplevel(root)
+    options_window.title("Настройки")
+
+    tk.Label(options_window, text="Функция потерь:").grid(row=0, column=0)
+    loss_function_combobox = ttk.Combobox(options_window, values=["Huber loss", "Hinge loss"])
+    loss_function_combobox.grid(row=0, column=1)
+    loss_function_combobox.set("Huber loss")
+
+    tk.Label(options_window, text="Оптимизация:").grid(row=1, column=0)
+    global optimization_combobox
+    optimization_combobox = ttk.Combobox(options_window, values=["L-BFGS-B", "Brute-Force", "Dual anneling"])
+    optimization_combobox.grid(row=1, column=1)
+    optimization_combobox.set("L-BFGS-B")
+    
+    optimization_combobox.bind("<<ComboboxSelected>>", on_optimization_change)
+
+
+    def apply_settings():
+        selected_loss_function = loss_function_combobox.get()
+        selected_optimization = optimization_combobox.get()
+        #messagebox.showinfo("Настройки", f"Выбрана функция потерь: {selected_loss_function}\nВыбран метод оптимизации: {selected_optimization}")
+
+    apply_button = tk.Button(options_window, text="Применить", command=apply_settings)
+    apply_button.grid(row=2, columnspan=2, pady=10)
 
 def random_restarts_optimization(loss_function, initial_guess, bounds, depth, M_obs, n_restarts=10):
     solutions = []
@@ -168,57 +206,36 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
     
-    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
-    axs[0].set_title("Field polarity", fontsize=8)
-    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
-    axs[0].set_ylabel('Depth')
+    axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[0].set_title("Field polarity", fontsize=8)
+    axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[0].set_ylabel('Depth')
 
 
-    axs[1].plot(fraction_data,depth_obs)
-    axs[1].set_title("e(z)", fontsize=8)
-    axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[1].plot(fraction_data,depth_obs)
+    axs2[1].set_title("e(z)", fontsize=8)
+    axs2[1].set_ylim(depth_obs[-1],depth_obs[0])
 
-    axs[2].plot(polarity, depth_obs)
-    axs[2].set_title("Observed polarity", fontsize=8)
-    axs[2].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[2].plot(polarity, depth_obs)
+    axs2[2].set_title("Observed polarity", fontsize=8)
+    axs2[2].set_ylim(depth_obs[-1],depth_obs[0])
     
-    axs[3].set_title("Modeled polarity", fontsize=8)
-    axs[3].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[3].set_title("Modeled polarity", fontsize=8)
+    axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
     
-    axs[4].set_title("Lock-in-function", fontsize=8)
-    axs[4].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[4].set_title("Lock-in-function", fontsize=8)
+    axs2[4].set_ylim(depth_obs[-1],depth_obs[0])
     
-    for ax in axs[1:]:
+    for ax in axs2[1:]:
         ax.tick_params(left=False)
         ax.set_yticklabels([])
 
-    figure.subplots_adjust(wspace=0.1)
-    canvas.draw()
+    figure2.subplots_adjust(wspace=0.1)
+    canvas2.draw()
 
     #print(data)
+    
 
-# Функция для открытия окна настроек
-def open_options():
-    options_window = tk.Toplevel(tab1)
-    options_window.title("Настройки")
-
-    tk.Label(options_window, text="Функция потерь:").grid(row=0, column=0)
-    loss_function_combobox = ttk.Combobox(options_window, values=["Huber loss", "Hinge loss"])
-    loss_function_combobox.grid(row=0, column=1)
-    loss_function_combobox.set("Huber loss")
-
-    tk.Label(options_window, text="Оптимизация:").grid(row=1, column=0)
-    optimization_combobox = ttk.Combobox(options_window, values=["L-BFGS-B", "Dual anneling"])
-    optimization_combobox.grid(row=1, column=1)
-    optimization_combobox.set("L-BFGS-B")
-
-    def apply_settings():
-        selected_loss_function = loss_function_combobox.get()
-        selected_optimization = optimization_combobox.get()
-        messagebox.showinfo("Настройки", f"Выбрана функция потерь: {selected_loss_function}\nВыбран метод оптимизации: {selected_optimization}")
-
-    apply_button = tk.Button(options_window, text="Применить", command=apply_settings)
-    apply_button.grid(row=2, columnspan=2, pady=10)
 
 def update_graphs(params):
 
@@ -302,9 +319,67 @@ def compute():
     except ValueError:
         messagebox.showerror("Ошибка", "Введите корректные числовые параметры.")
 
+def direct_comptue():
+    
+    global c1,c2
+    
+    d0 = float(entry_d0.get())
+    d1 = float(entry_d1.get())
+    d2 = float(entry_d2.get())
+    d3 = float(entry_d3.get())
+    
+    c1 = float(entry_c1_d.get())
+    c2 = float(entry_c2_d.get())
+    
+    params = get_params_from_depths([d0,d1,d2,d3])
+    
+    try:
+        #for ax in axs2:
+         #   ax.clear()
+        #M_modeled = get_magnetisation(depth_obs, params)
+        
+        axs2[0].clear()
+        axs2[0].plot(H(depth_obs), depth_obs)
+        axs2[0].set_title("Field polarity", fontsize=8)
+        axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+        axs2[0].set_ylabel('Depth')
+        
+        #axs2[1].plot(fraction_data,depth_obs)
+        #axs2[1].set_title("e(z)", fontsize=8)
+        #axs2[1].set_ylim(depth_obs[-1],depth_obs[0])
+        
+        axs2[3].clear()
+        axs2[3].plot(get_magnetisation(depth_obs, params),depth_obs)
+        axs2[3].set_title("Modeled polarity", fontsize=8)
+        axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
+        
+        axs2[4].clear()
+        axs2[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
+        axs2[4].plot(l_custom(0.5,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.5')
+        axs2[4].plot(l_custom(0.1,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.1')
+        
+        axs2[4].set_title("Lock-in-function", fontsize=8)
+        #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
+        axs2[4].set_ylim(0,10)
+        axs2[4].legend(loc = 'lower left')
+        
+        
+        
+        
+        for ax in axs2[1:]:
+            ax.tick_params(left=False)
+            ax.set_yticklabels([])
+
+        figure2.subplots_adjust(wspace=0.1)
+        canvas2.draw()
+        
+        
+    except ValueError:
+        messagebox.showerror("Ошибка", "Введите корректные числовые параметры.")
+
 # Создание главного окна
 root = tk.Tk()
-root.title("Приложение с графиками")
+root.title("Loess - paleosol magnitization")
 
 menu_bar = tk.Menu(root)
 file_menu = tk.Menu(menu_bar, tearoff=0)
@@ -322,7 +397,7 @@ notebook.pack(expand=True, fill='both')
 
 # First Tab
 tab1 = tk.Frame(notebook)
-notebook.add(tab1, text='Tab 1')
+notebook.add(tab1, text='Inverse')
 
 left_frame = tk.Frame(tab1)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
@@ -377,9 +452,11 @@ entry_с2 = tk.Entry(left_frame)
 entry_с2.grid(row=4, column=3)
 entry_с2.insert(0, "1.0")
 
-tk.Label(left_frame, text="Calculation times:").grid(row=5, column=0, columnspan=2)
+entry_calc_times_label = tk.Label(left_frame, text="Calculation times:")
+entry_calc_times_label.grid(row=5, column=1, columnspan=2)
+
 entry_calc_times = tk.Entry(left_frame)
-entry_calc_times.grid(row=5, column=2, columnspan=2)
+entry_calc_times.grid(row=5, column=3)
 entry_calc_times.insert(0, "10")
 
 compute_button = tk.Button(left_frame, text="Compute", command=compute)
@@ -438,7 +515,7 @@ canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 # Second Tab
 tab2 = tk.Frame(notebook)
-notebook.add(tab2, text='Tab 2')
+notebook.add(tab2, text='Forward')
 
 # Second Tab Left Frame
 left_frame2 = tk.Frame(tab2)
@@ -466,21 +543,21 @@ entry_d3.grid(row=3, column=1)
 entry_d3.insert(0, "1.0")
 
 tk.Label(left_frame2, text="c1:").grid(row=4, column=0)
-entry_c1 = tk.Entry(left_frame2)
-entry_c1.grid(row=4, column=1)
-entry_c1.insert(0, "1.0")
+entry_c1_d = tk.Entry(left_frame2)
+entry_c1_d.grid(row=4, column=1)
+entry_c1_d.insert(0, "1.0")
 
 tk.Label(left_frame2, text="c2:").grid(row=5, column=0)
-entry_c2 = tk.Entry(left_frame2)
-entry_c2.grid(row=5, column=1)
-entry_c2.insert(0, "1.0")
+entry_c2_d = tk.Entry(left_frame2)
+entry_c2_d.grid(row=5, column=1)
+entry_c2_d.insert(0, "1.0")
 
 tk.Label(left_frame2, text="Steps:").grid(row=6, column=0)
 entry_steps = tk.Entry(left_frame2)
 entry_steps.grid(row=6, column=1)
 entry_steps.insert(0, "100")
 
-compute_button2 = tk.Button(left_frame2, text="Compute", command=compute)
+compute_button2 = tk.Button(left_frame2, text="Compute", command=direct_comptue)
 compute_button2.grid(row=7, columnspan=2, pady=10)
 
 # Second Tab Figure and Canvas
@@ -497,21 +574,17 @@ axs2[0].set_ylabel('Depth')
 #axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
 
 
-
+#axs[1].plot(y2, x)
 axs2[1].set_title("e(z)", fontsize=8)
 
-
+#axs[3].plot(y4, x)
 
 axs2[2].set_title("Observed polarity", fontsize=8)
 
-
 axs2[3].set_title("Modeled polarity", fontsize=8)
 
-
+#axs[4].plot(y5, x)
 axs2[4].set_title("Lock-in-function", fontsize=8)
-
-figure2.subplots_adjust(wspace=0.1)
-
 
 for ax in axs2[1:]:
     ax.tick_params(left=False)
@@ -519,5 +592,6 @@ for ax in axs2[1:]:
 
 canvas2 = FigureCanvasTkAgg(figure2, tab2)
 canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
 
 root.mainloop()
