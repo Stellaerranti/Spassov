@@ -167,6 +167,7 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
 
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
+<<<<<<< HEAD
     
     axs[0].set_ylim(depth_obs[-1],depth_obs[0])
     axs[0].set_title("Field polarity", fontsize=8)
@@ -195,6 +196,9 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
 
+=======
+
+>>>>>>> parent of ad772bd (Direct computatio added)
     #print(data)
 
 # Функция для открытия окна настроек
@@ -316,15 +320,7 @@ options_menu.add_command(label="Settings", command=open_options)
 menu_bar.add_cascade(label="Options", menu=options_menu)
 root.config(menu=menu_bar)
 
-# Create Notebook (tabs)
-notebook = ttk.Notebook(root)
-notebook.pack(expand=True, fill='both')
-
-# First Tab
-tab1 = tk.Frame(notebook)
-notebook.add(tab1, text='Tab 1')
-
-left_frame = tk.Frame(tab1)
+left_frame = tk.Frame(root)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
 tk.Label(left_frame, text="a1 low:").grid(row=0, column=0)
@@ -386,7 +382,7 @@ compute_button = tk.Button(left_frame, text="Compute", command=compute)
 compute_button.grid(row=6, columnspan=4, pady=10)
 
 # Рамка для отображения решений
-solution_frame = tk.Frame(tab1)
+solution_frame = tk.Frame(root)
 solution_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
 # Placeholder для области решений
@@ -406,13 +402,18 @@ axs = [ax1,
        figure.add_subplot(1, 5, 5)]
 
 
+<<<<<<< HEAD
 
 
+=======
+axs[0].plot(y1, x)
+>>>>>>> parent of ad772bd (Direct computatio added)
 axs[0].set_title("Field polarity", fontsize=8)
 axs[0].set_ylabel('Depth')
 #axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
 
 
+<<<<<<< HEAD
 
 axs[1].set_title("e(z)", fontsize=8)
 
@@ -424,6 +425,19 @@ axs[2].set_title("Observed polarity", fontsize=8)
 axs[3].set_title("Modeled polarity", fontsize=8)
 
 
+=======
+axs[1].plot(y2, x)
+axs[1].set_title("e(z)", fontsize=8)
+
+
+axs[2].plot(y3, x)
+axs[2].set_title("Observed polarity", fontsize=8)
+
+axs[3].plot(y4, x)
+axs[3].set_title("Modeled polarity", fontsize=8)
+
+axs[4].plot(y5, x)
+>>>>>>> parent of ad772bd (Direct computatio added)
 axs[4].set_title("Lock-in-function", fontsize=8)
 
 figure.subplots_adjust(wspace=0.1)
@@ -433,9 +447,10 @@ for ax in axs[1:]:
     ax.tick_params(left=False)
     ax.set_yticklabels([])
 
-canvas = FigureCanvasTkAgg(figure, tab1)
+canvas = FigureCanvasTkAgg(figure, root)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
+<<<<<<< HEAD
 # Second Tab
 tab2 = tk.Frame(notebook)
 notebook.add(tab2, text='Tab 2')
@@ -520,4 +535,6 @@ for ax in axs2[1:]:
 canvas2 = FigureCanvasTkAgg(figure2, tab2)
 canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
+=======
+>>>>>>> parent of ad772bd (Direct computatio added)
 root.mainloop()
