@@ -167,6 +167,33 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
 
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
+    
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_title("Field polarity", fontsize=8)
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_ylabel('Depth')
+
+
+    axs[1].plot(fraction_data,depth_obs)
+    axs[1].set_title("e(z)", fontsize=8)
+    axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+
+    axs[2].plot(polarity, depth_obs)
+    axs[2].set_title("Observed polarity", fontsize=8)
+    axs[2].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[3].set_title("Modeled polarity", fontsize=8)
+    axs[3].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[4].set_title("Lock-in-function", fontsize=8)
+    axs[4].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    for ax in axs[1:]:
+        ax.tick_params(left=False)
+        ax.set_yticklabels([])
+
+    figure.subplots_adjust(wspace=0.1)
+    canvas.draw()
 
     #print(data)
 
@@ -378,30 +405,25 @@ axs = [ax1,
        figure.add_subplot(1, 5, 4),
        figure.add_subplot(1, 5, 5)]
 
-x = np.linspace(0, 10, 100)
-y1 = np.sin(x)
-y2 = np.cos(x)
-y3 = np.sin(x) * np.cos(x)
-y4 = np.sin(x) + np.cos(x)
-y5 = np.tan(x)
 
-axs[0].plot(y1, x)
+
+
 axs[0].set_title("Field polarity", fontsize=8)
 axs[0].set_ylabel('Depth')
 #axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
 
 
-axs[1].plot(y2, x)
+
 axs[1].set_title("e(z)", fontsize=8)
 
 
-axs[2].plot(y3, x)
+
 axs[2].set_title("Observed polarity", fontsize=8)
 
-axs[3].plot(y4, x)
+
 axs[3].set_title("Modeled polarity", fontsize=8)
 
-axs[4].plot(y5, x)
+
 axs[4].set_title("Lock-in-function", fontsize=8)
 
 figure.subplots_adjust(wspace=0.1)
@@ -463,11 +485,37 @@ compute_button2.grid(row=7, columnspan=2, pady=10)
 
 # Second Tab Figure and Canvas
 figure2 = Figure(figsize=(12, 4))
-ax2_1 = figure2.add_subplot(1, 4, 1)
+ax2_1 = figure2.add_subplot(1, 5, 1)
 axs2 = [ax2_1,
-        figure2.add_subplot(1, 4, 2, sharey=ax2_1),
-        figure2.add_subplot(1, 4, 3, sharey=ax2_1),
-        figure2.add_subplot(1, 4, 4, sharey=ax2_1)]
+        figure2.add_subplot(1, 5, 2),
+        figure2.add_subplot(1, 5, 3),
+        figure2.add_subplot(1, 5, 4),
+        figure2.add_subplot(1, 5, 5)]
+
+axs2[0].set_title("Field polarity", fontsize=8)
+axs2[0].set_ylabel('Depth')
+#axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
+
+
+
+axs2[1].set_title("e(z)", fontsize=8)
+
+
+
+axs2[2].set_title("Observed polarity", fontsize=8)
+
+
+axs2[3].set_title("Modeled polarity", fontsize=8)
+
+
+axs2[4].set_title("Lock-in-function", fontsize=8)
+
+figure2.subplots_adjust(wspace=0.1)
+
+
+for ax in axs2[1:]:
+    ax.tick_params(left=False)
+    ax.set_yticklabels([])
 
 canvas2 = FigureCanvasTkAgg(figure2, tab2)
 canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
