@@ -167,12 +167,39 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
 
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
+    
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_title("Field polarity", fontsize=8)
+    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_ylabel('Depth')
+
+
+    axs[1].plot(fraction_data,depth_obs)
+    axs[1].set_title("e(z)", fontsize=8)
+    axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+
+    axs[2].plot(polarity, depth_obs)
+    axs[2].set_title("Observed polarity", fontsize=8)
+    axs[2].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[3].set_title("Modeled polarity", fontsize=8)
+    axs[3].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    axs[4].set_title("Lock-in-function", fontsize=8)
+    axs[4].set_ylim(depth_obs[-1],depth_obs[0])
+    
+    for ax in axs[1:]:
+        ax.tick_params(left=False)
+        ax.set_yticklabels([])
+
+    figure.subplots_adjust(wspace=0.1)
+    canvas.draw()
 
     #print(data)
 
 # Функция для открытия окна настроек
 def open_options():
-    options_window = tk.Toplevel(root)
+    options_window = tk.Toplevel(tab1)
     options_window.title("Настройки")
 
     tk.Label(options_window, text="Функция потерь:").grid(row=0, column=0)
@@ -289,7 +316,15 @@ options_menu.add_command(label="Settings", command=open_options)
 menu_bar.add_cascade(label="Options", menu=options_menu)
 root.config(menu=menu_bar)
 
-left_frame = tk.Frame(root)
+# Create Notebook (tabs)
+notebook = ttk.Notebook(root)
+notebook.pack(expand=True, fill='both')
+
+# First Tab
+tab1 = tk.Frame(notebook)
+notebook.add(tab1, text='Tab 1')
+
+left_frame = tk.Frame(tab1)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
 tk.Label(left_frame, text="a1 low:").grid(row=0, column=0)
@@ -351,7 +386,7 @@ compute_button = tk.Button(left_frame, text="Compute", command=compute)
 compute_button.grid(row=6, columnspan=4, pady=10)
 
 # Рамка для отображения решений
-solution_frame = tk.Frame(root)
+solution_frame = tk.Frame(tab1)
 solution_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
 # Placeholder для области решений
@@ -370,30 +405,25 @@ axs = [ax1,
        figure.add_subplot(1, 5, 4),
        figure.add_subplot(1, 5, 5)]
 
-x = np.linspace(0, 10, 100)
-y1 = np.sin(x)
-y2 = np.cos(x)
-y3 = np.sin(x) * np.cos(x)
-y4 = np.sin(x) + np.cos(x)
-y5 = np.tan(x)
 
-axs[0].plot(y1, x)
+
+
 axs[0].set_title("Field polarity", fontsize=8)
 axs[0].set_ylabel('Depth')
 #axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
 
 
-axs[1].plot(y2, x)
+
 axs[1].set_title("e(z)", fontsize=8)
 
 
-axs[2].plot(y3, x)
+
 axs[2].set_title("Observed polarity", fontsize=8)
 
-axs[3].plot(y4, x)
+
 axs[3].set_title("Modeled polarity", fontsize=8)
 
-axs[4].plot(y5, x)
+
 axs[4].set_title("Lock-in-function", fontsize=8)
 
 figure.subplots_adjust(wspace=0.1)
@@ -403,7 +433,91 @@ for ax in axs[1:]:
     ax.tick_params(left=False)
     ax.set_yticklabels([])
 
-canvas = FigureCanvasTkAgg(figure, root)
+canvas = FigureCanvasTkAgg(figure, tab1)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+# Second Tab
+tab2 = tk.Frame(notebook)
+notebook.add(tab2, text='Tab 2')
+
+# Second Tab Left Frame
+left_frame2 = tk.Frame(tab2)
+left_frame2.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+
+# Textboxes and Button in Second Tab
+tk.Label(left_frame2, text="d0:").grid(row=0, column=0)
+entry_d0 = tk.Entry(left_frame2)
+entry_d0.grid(row=0, column=1)
+entry_d0.insert(0, "1.0")
+
+tk.Label(left_frame2, text="d1:").grid(row=1, column=0)
+entry_d1 = tk.Entry(left_frame2)
+entry_d1.grid(row=1, column=1)
+entry_d1.insert(0, "1.0")
+
+tk.Label(left_frame2, text="d2:").grid(row=2, column=0)
+entry_d2 = tk.Entry(left_frame2)
+entry_d2.grid(row=2, column=1)
+entry_d2.insert(0, "1.0")
+
+tk.Label(left_frame2, text="d3:").grid(row=3, column=0)
+entry_d3 = tk.Entry(left_frame2)
+entry_d3.grid(row=3, column=1)
+entry_d3.insert(0, "1.0")
+
+tk.Label(left_frame2, text="c1:").grid(row=4, column=0)
+entry_c1 = tk.Entry(left_frame2)
+entry_c1.grid(row=4, column=1)
+entry_c1.insert(0, "1.0")
+
+tk.Label(left_frame2, text="c2:").grid(row=5, column=0)
+entry_c2 = tk.Entry(left_frame2)
+entry_c2.grid(row=5, column=1)
+entry_c2.insert(0, "1.0")
+
+tk.Label(left_frame2, text="Steps:").grid(row=6, column=0)
+entry_steps = tk.Entry(left_frame2)
+entry_steps.grid(row=6, column=1)
+entry_steps.insert(0, "100")
+
+compute_button2 = tk.Button(left_frame2, text="Compute", command=compute)
+compute_button2.grid(row=7, columnspan=2, pady=10)
+
+# Second Tab Figure and Canvas
+figure2 = Figure(figsize=(12, 4))
+ax2_1 = figure2.add_subplot(1, 5, 1)
+axs2 = [ax2_1,
+        figure2.add_subplot(1, 5, 2),
+        figure2.add_subplot(1, 5, 3),
+        figure2.add_subplot(1, 5, 4),
+        figure2.add_subplot(1, 5, 5)]
+
+axs2[0].set_title("Field polarity", fontsize=8)
+axs2[0].set_ylabel('Depth')
+#axs[0].tick_params(axis='y', which='both', left=True, labelleft=True)  # Включаем метки и подписи по оси Y
+
+
+
+axs2[1].set_title("e(z)", fontsize=8)
+
+
+
+axs2[2].set_title("Observed polarity", fontsize=8)
+
+
+axs2[3].set_title("Modeled polarity", fontsize=8)
+
+
+axs2[4].set_title("Lock-in-function", fontsize=8)
+
+figure2.subplots_adjust(wspace=0.1)
+
+
+for ax in axs2[1:]:
+    ax.tick_params(left=False)
+    ax.set_yticklabels([])
+
+canvas2 = FigureCanvasTkAgg(figure2, tab2)
+canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 root.mainloop()
