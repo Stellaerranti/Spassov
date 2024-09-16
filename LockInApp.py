@@ -16,6 +16,9 @@ depth_obs = None
 fraction_data = None
 polarity = None
 
+selected_loss_function = "Huber loss"
+selected_optimization = "L-BFGS-B"
+
 c1 = 73.4
 c2 = 74.
 
@@ -81,6 +84,20 @@ def huber_loss(params, z_data, M_obs, delta=1.0):
     
     return np.mean(loss)
 
+def mse_loss(params, z_data, M_obs):
+    a1, a2, b1, b2 = params
+    M_pred = get_magnetisation(z_data, params)
+    residuals = M_obs - M_pred
+    loss = residuals ** 2
+    return np.mean(loss)
+
+def hinge_loss(params, z_data, M_obs):
+    a1, a2, b1, b2 = params
+    M_pred = get_magnetisation(z_data, params)
+    # Hinge loss assumes labels are -1 or 1
+    loss = np.maximum(0, 1 - M_obs * M_pred)
+    return np.mean(loss)
+
 def on_optimization_change(event):
     selected_option = optimization_combobox.get()
     if selected_option == "Brute-Force":
@@ -94,9 +111,11 @@ def on_optimization_change(event):
 def open_options():
     options_window = tk.Toplevel(root)
     options_window.title("Настройки")
-
+    
+    
+    global loss_function_combobox
     tk.Label(options_window, text="Функция потерь:").grid(row=0, column=0)
-    loss_function_combobox = ttk.Combobox(options_window, values=["Huber loss", "Hinge loss"])
+    loss_function_combobox = ttk.Combobox(options_window, values=["Huber loss", "MSE", "Hinge loss"])
     loss_function_combobox.grid(row=0, column=1)
     loss_function_combobox.set("Huber loss")
 
@@ -110,23 +129,15 @@ def open_options():
 
 
     def apply_settings():
+        global selected_loss_function
+        global selected_optimization
+        
         selected_loss_function = loss_function_combobox.get()
         selected_optimization = optimization_combobox.get()
         #messagebox.showinfo("Настройки", f"Выбрана функция потерь: {selected_loss_function}\nВыбран метод оптимизации: {selected_optimization}")
 
     apply_button = tk.Button(options_window, text="Применить", command=apply_settings)
     apply_button.grid(row=2, columnspan=2, pady=10)
-
-def random_restarts_optimization(loss_function, initial_guess, bounds, depth, M_obs, n_restarts=10):
-    solutions = []
-    for i in range(n_restarts):
-        
-        # Generate a random initial guess within the bounds
-        random_initial = [np.random.uniform(low, high) for low, high in bounds]
-        result = minimize(loss_function, random_initial, args=(depth, M_obs), method='L-BFGS-B', bounds=bounds)
-        solutions.append(result.x)
-        print(f"Iteration: {i+1}")
-    return solutions
 
 def adjust_param_ranges(param_low, param_high, epsilon=1e-1):
     # Проверка и коррекция границ параметров
@@ -233,9 +244,6 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     figure2.subplots_adjust(wspace=0.1)
     canvas2.draw()
 
-    #print(data)
-    
-
 
 def update_graphs(params):
 
@@ -274,6 +282,29 @@ def update_graphs(params):
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
 
+def random_restarts_optimization(loss_function, initial_guess, bounds, depth, M_obs, n_restarts=10):
+    solutions = []
+    for i in range(n_restarts):
+        
+        # Generate a random initial guess within the bounds
+        random_initial = [np.random.uniform(low, high) for low, high in bounds]
+        result = minimize(loss_function, random_initial, args=(depth, M_obs), method='L-BFGS-B', bounds=bounds)
+        solutions.append(result.x)
+        print(f"Iteration: {i+1}")
+    return solutions
+
+def random_restarts_optimization_dual_anneling(loss_function, initial_guess, bounds, depth, M_obs, n_restarts=10):
+    solutions = []
+    for i in range(n_restarts):
+        
+        # Generate a random initial guess within the bounds
+        random_initial = [np.random.uniform(low, high) for low, high in bounds]
+        result = dual_annealing(loss_function, random_initial, args=(depth, M_obs))
+        
+        solutions.append(result.x)
+        print(f"Iteration: {i+1}")
+    return solutions
+
 def compute():
     global c1,c2
     
@@ -291,31 +322,92 @@ def compute():
     initial_params = [1.0, 1.0, 1.0, 1.0]
     
     #bounds = np.column_stack((get_params_from_depths([d0_low,d1_low,d2_low,d3_low]),get_params_from_depths([d0_high,d1_high,d2_high,d3_high])))
-    #depth_ranges = (d0_low,d0_high,d1_low,d1_high,d2_low,d2_high,d3_low,d3_high)
+    depth_ranges = (d0_low,d0_high,d1_low,d1_high,d2_low,d2_high,d3_low,d3_high)
     
-    #bounds = convert_depths_to_params_ranges(depth_ranges)
-    
+    bounds = convert_depths_to_params_ranges(depth_ranges)
+    '''
     bounds = [(d0_low, d0_high),  # a1
           (d1_low, d1_high),  # a2
           (d2_low, d2_high),    # b1
           (d3_low, d3_high)] 
-   
+    '''
     try:
+        #selected_optimization = optimization_combobox.get()
+        #selected_loss_function = loss_function_combobox.get()
         
-        solutions = random_restarts_optimization(huber_loss, initial_params, bounds, depth_obs, polarity, n_restarts=calculation_times)
-
-        # Очистка предыдущих решений
-        for widget in solution_frame.winfo_children():
-            widget.destroy()
-
-        # Замена placeholder на кнопки решений
-        for i, (sols) in enumerate(solutions):
-            d0,d1,d2,d3 = get_lock_depth_from_params(sols)
+        if(selected_loss_function == "Huber loss"):
+            loss_function = huber_loss
+        elif(selected_loss_function == "Hinge loss"):
+            loss_function = hinge_loss
+        elif(selected_loss_function == "MSE"):
+            loss_function = mse_loss
             
-            button = tk.Button(solution_frame, text=f"Решение {i+1}: d0={d0:.2f}, d1={d1:.2f}, d2={d2:.2f}, d3={d3:.2f}",
-                               command=lambda d0=d0, d1=d1, d2=d2, d3=d3: update_graphs(sols))
-            button.pack()
-
+        
+        
+        if (selected_optimization == 'L-BFGS-B'):
+            
+            solutions = random_restarts_optimization(loss_function, initial_params, bounds, depth_obs, polarity, n_restarts=calculation_times)
+            
+            # Очистка предыдущих решений
+            for widget in solution_frame.winfo_children():
+                widget.destroy()
+    
+            # Замена placeholder на кнопки решений
+            for i, (sols) in enumerate(solutions):
+                d0,d1,d2,d3 = get_lock_depth_from_params(sols)
+                
+                button = tk.Button(solution_frame, text=f"Решение {i+1}: d0={d0:.2f}, d1={d1:.2f}, d2={d2:.2f}, d3={d3:.2f}",
+                                   command=lambda d0=d0, d1=d1, d2=d2, d3=d3: update_graphs(sols))
+                button.pack()
+                
+        elif(selected_optimization == "Dual anneling"):
+            
+            solutions = random_restarts_optimization_dual_anneling(loss_function, initial_params, bounds, depth_obs, polarity, n_restarts=calculation_times)
+            
+            # Очистка предыдущих решений
+            for widget in solution_frame.winfo_children():
+                widget.destroy()
+    
+            # Замена placeholder на кнопки решений
+            for i, (sols) in enumerate(solutions):
+                d0,d1,d2,d3 = get_lock_depth_from_params(sols)
+                
+                button = tk.Button(solution_frame, text=f"Решение {i+1}: d0={d0:.2f}, d1={d1:.2f}, d2={d2:.2f}, d3={d3:.2f}",
+                                   command=lambda d0=d0, d1=d1, d2=d2, d3=d3: update_graphs(sols))
+                button.pack()
+        
+        elif(selected_optimization == "Brute-Force"):
+            
+            val_step = calculation_times
+            
+            d0,d1,d2,d3 = d0_low,d1_low,d2_low,d3_low
+            
+            res = []
+            
+            while d0 < d0_high:
+                while d1 < d1_high:
+                    while d2 < d2_high:
+                        while d3 < d3_high:
+                            res.append([d0,d1,d2,d3,mse_loss(get_params_from_depths([d0,d1,d2,d3],depth_obs,polarity))])                      
+    
+                            d3 = d3 + val_step
+                        d2 = d2 + val_step
+                    d1 = d1 + val_step
+                d0 = d0 + val_step
+                
+            res = np.asarray(res)
+            
+            res_sorted = np.sort(res)
+            
+            for i in range(20):
+                d0,d1,d2,d3,_ = res_sorted[i]
+                
+                sols = get_params_from_depths([d0,d1,d2,d3])
+                
+                button = tk.Button(solution_frame, text=f"Решение {i+1}: d0={d0:.2f}, d1={d1:.2f}, d2={d2:.2f}, d3={d3:.2f}",
+                                   command=lambda d0=d0, d1=d1, d2=d2, d3=d3: update_graphs(sols))
+                button.pack()
+            
     except ValueError:
         messagebox.showerror("Ошибка", "Введите корректные числовые параметры.")
 
@@ -402,42 +494,42 @@ notebook.add(tab1, text='Inverse')
 left_frame = tk.Frame(tab1)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-tk.Label(left_frame, text="a1 low:").grid(row=0, column=0)
+tk.Label(left_frame, text="d0 low:").grid(row=0, column=0)
 entry_d0_low = tk.Entry(left_frame)
 entry_d0_low.grid(row=0, column=1)
 entry_d0_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="a1 high:").grid(row=0, column=2)
+tk.Label(left_frame, text="d0 high:").grid(row=0, column=2)
 entry_d0_high = tk.Entry(left_frame)
 entry_d0_high.grid(row=0, column=3)
 entry_d0_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="a2 low:").grid(row=1, column=0)
+tk.Label(left_frame, text="d1 low:").grid(row=1, column=0)
 entry_d1_low = tk.Entry(left_frame)
 entry_d1_low.grid(row=1, column=1)
 entry_d1_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="a2 high:").grid(row=1, column=2)
+tk.Label(left_frame, text="d1 high:").grid(row=1, column=2)
 entry_d1_high = tk.Entry(left_frame)
 entry_d1_high.grid(row=1, column=3)
 entry_d1_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="b1 low:").grid(row=2, column=0)
+tk.Label(left_frame, text="d2 low:").grid(row=2, column=0)
 entry_d2_low = tk.Entry(left_frame)
 entry_d2_low.grid(row=2, column=1)
 entry_d2_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="b1 high:").grid(row=2, column=2)
+tk.Label(left_frame, text="d2 high:").grid(row=2, column=2)
 entry_d2_high = tk.Entry(left_frame)
 entry_d2_high.grid(row=2, column=3)
 entry_d2_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="b2 low:").grid(row=3, column=0)
+tk.Label(left_frame, text="d3 low:").grid(row=3, column=0)
 entry_d3_low = tk.Entry(left_frame)
 entry_d3_low.grid(row=3, column=1)
 entry_d3_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="b2 high:").grid(row=3, column=2)
+tk.Label(left_frame, text="d3 high:").grid(row=3, column=2)
 entry_d3_high = tk.Entry(left_frame)
 entry_d3_high.grid(row=3, column=3)
 entry_d3_high.insert(0, "1.0")
