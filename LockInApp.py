@@ -3,6 +3,8 @@ from tkinter import filedialog, messagebox
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+
 import numpy as np
 from scipy.integrate import quad
 from numpy import exp
@@ -11,6 +13,7 @@ from numpy import tanh
 from scipy.optimize import minimize
 from scipy.optimize import dual_annealing
 from scipy.optimize import differential_evolution
+from PIL import Image, ImageTk
 
 depth_obs = None
 fraction_data = None
@@ -452,7 +455,7 @@ def direct_comptue():
         
         axs2[4].set_title("Lock-in-function", fontsize=8)
         #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
-        axs2[4].set_ylim(0,10)
+        axs2[4].set_ylim(10,0)
         axs2[4].legend(loc = 'lower left')
         
         
@@ -554,6 +557,9 @@ entry_calc_times.insert(0, "10")
 compute_button = tk.Button(left_frame, text="Compute", command=compute)
 compute_button.grid(row=6, columnspan=4, pady=10)
 
+image_label_tab1 = tk.Label(left_frame, text="Image Placeholder")
+image_label_tab1.grid(row=7, columnspan=4, pady=10)
+
 # Рамка для отображения решений
 solution_frame = tk.Frame(tab1)
 solution_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
@@ -644,13 +650,12 @@ entry_c2_d = tk.Entry(left_frame2)
 entry_c2_d.grid(row=5, column=1)
 entry_c2_d.insert(0, "1.0")
 
-tk.Label(left_frame2, text="Steps:").grid(row=6, column=0)
-entry_steps = tk.Entry(left_frame2)
-entry_steps.grid(row=6, column=1)
-entry_steps.insert(0, "100")
 
 compute_button2 = tk.Button(left_frame2, text="Compute", command=direct_comptue)
-compute_button2.grid(row=7, columnspan=2, pady=10)
+compute_button2.grid(row=6, columnspan=2, pady=10)
+
+#image_label_tab2 = tk.Label(left_frame2, text="Image Placeholder")
+#mage_label_tab2.grid(row=8, columnspan=2, pady=10)
 
 # Second Tab Figure and Canvas
 figure2 = Figure(figsize=(12, 4))
@@ -684,6 +689,11 @@ for ax in axs2[1:]:
 
 canvas2 = FigureCanvasTkAgg(figure2, tab2)
 canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+# Load and display the provided image in both placeholders
+image_path = "ez.png"
+#load_and_display_image(image_path, image_label_tab1)
+#load_and_display_image(image_path, image_label_tab2)
 
 
 root.mainloop()
