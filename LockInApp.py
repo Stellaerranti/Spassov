@@ -246,8 +246,12 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     axs2[3].set_title("Modeled polarity", fontsize=8)
     axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
     
+    '''
     axs2[4].set_title("Lock-in-function", fontsize=8)
-    axs2[4].set_ylim(depth_obs[-1],depth_obs[0])
+    #axs2[4].set_ylim(depth_obs[-1],depth_obs[0])
+    '''
+    
+    
     
     for ax in axs2[1:]:
         ax.tick_params(left=False)
@@ -457,6 +461,7 @@ def direct_comptue():
         axs2[3].set_title("Modeled polarity", fontsize=8)
         axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
         
+        '''
         axs2[4].clear()
         axs2[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
         axs2[4].plot(l_custom(0.5,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.5')
@@ -465,11 +470,23 @@ def direct_comptue():
         axs2[4].set_title("Lock-in-function", fontsize=8)
         #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
         axs2[4].set_ylim(10,0)
-        axs2[4].legend(loc = 'lower left')
+        axs2[4].legend(loc = 'lower left')        
         
-        
-        
-        
+        if axs2[1].get_lines():
+            yticks = axs2[0].get_yticks() 
+            
+            tick_interval = yticks[1] - yticks[0]
+            axs2[4].yaxis.set_major_locator(MultipleLocator(tick_interval))
+            
+            set_visual_scale([axs2[4]], axs2[0], tick_interval)
+            
+            
+            axs2[4].invert_yaxis()
+            #axs2[4].set_yticks()
+            
+        else:
+            axs2[4].set_ylim(10,0)
+        '''
         for ax in axs2[1:]:
             ax.tick_params(left=False)
             ax.set_yticklabels([])
