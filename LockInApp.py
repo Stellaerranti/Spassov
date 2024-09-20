@@ -25,6 +25,14 @@ selected_optimization = "L-BFGS-B"
 c1 = 73.4
 c2 = 74.
 
+def parse_float(value):
+    try:
+        # Replace commas with periods
+        value = value.replace(",", ".")
+        return float(value)
+    except ValueError:
+        raise ValueError(f"Invalid input for float conversion: {value}")
+
 def get_lock_depth_from_params(params):
     a1,a2,b1,b2 = params
     lock_in_depth = [(b1-2)/a1,(b1+2)/a1,(b2-2)/a2,(b2+2)/a2]
@@ -311,16 +319,16 @@ def random_restarts_optimization_dual_anneling(loss_function, initial_guess, bou
 def compute():
     global c1,c2
     
-    d0_low = float(entry_d0_low.get())
-    d0_high = float(entry_d0_high.get())
-    d1_low = float(entry_d1_low.get())
-    d1_high = float(entry_d1_high.get())
-    d2_low = float(entry_d2_low.get())
-    d2_high = float(entry_d2_high.get())
-    d3_low = float(entry_d3_low.get())
-    d3_high = float(entry_d3_high.get())
-    c1 = float(entry_с1.get())
-    c2 = float(entry_с2.get())
+    d0_low = parse_float(entry_d0_low.get())
+    d0_high = parse_float(entry_d0_high.get())
+    d1_low = parse_float(entry_d1_low.get())
+    d1_high = parse_float(entry_d1_high.get())
+    d2_low = parse_float(entry_d2_low.get())
+    d2_high = parse_float(entry_d2_high.get())
+    d3_low = parse_float(entry_d3_low.get())
+    d3_high = parse_float(entry_d3_high.get())
+    c1 = parse_float(entry_с1.get())
+    c2 = parse_float(entry_с2.get())
     calculation_times = int(entry_calc_times.get())
     initial_params = [1.0, 1.0, 1.0, 1.0]
     
@@ -418,13 +426,13 @@ def direct_comptue():
     
     global c1,c2
     
-    d0 = float(entry_d0.get())
-    d1 = float(entry_d1.get())
-    d2 = float(entry_d2.get())
-    d3 = float(entry_d3.get())
+    d0 = parse_float(entry_d0.get())
+    d1 = parse_float(entry_d1.get())
+    d2 = parse_float(entry_d2.get())
+    d3 = parse_float(entry_d3.get())
     
-    c1 = float(entry_c1_d.get())
-    c2 = float(entry_c2_d.get())
+    c1 = parse_float(entry_c1_d.get())
+    c2 = parse_float(entry_c2_d.get())
     
     params = get_params_from_depths([d0,d1,d2,d3])
     
@@ -471,6 +479,87 @@ def direct_comptue():
         
     except ValueError:
         messagebox.showerror("Ошибка", "Введите корректные числовые параметры.")
+        
+def field_change_forvard(*args):
+    
+    global c1,c2  
+    
+    
+    try:
+        c1 = parse_float(entry_c1_d.get())
+        c2 = parse_float(entry_c2_d.get())
+        
+        axs2[0].clear()
+        axs2[0].plot(H(depth_obs), depth_obs)
+        axs2[0].set_title("Field polarity", fontsize=8)
+        axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+        axs2[0].set_ylabel('Depth')
+        
+        for ax in axs2[1:]:
+            ax.tick_params(left=False)
+            ax.set_yticklabels([])
+        
+        figure2.subplots_adjust(wspace=0.1)
+        canvas2.draw()
+        
+    except (ValueError, ZeroDivisionError) as e:
+        return   
+
+def field_change_inverse(*args):
+    
+    global c1,c2  
+    
+    
+    try:
+        c1 = parse_float(entry_с1.get())
+        c2 = parse_float(entry_с2.get())
+        
+        axs[0].clear()
+        axs[0].plot(H(depth_obs), depth_obs)
+        axs[0].set_title("Field polarity", fontsize=8)
+        axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+        axs[0].set_ylabel('Depth')        
+        
+        for ax in axs[1:]:
+            ax.tick_params(left=False)
+            ax.set_yticklabels([])
+        
+        figure.subplots_adjust(wspace=0.1)
+        canvas.draw()
+        
+    except (ValueError, ZeroDivisionError) as e:
+        return   
+
+def depth_changed_forvard(*args):
+    
+    try:
+        d0 = parse_float(entry_d0.get())
+        d1 = parse_float(entry_d1.get())
+        d2 = parse_float(entry_d2.get())
+        d3 = parse_float(entry_d3.get())
+        
+        params = get_params_from_depths([d0,d1,d2,d3])
+        
+        axs2[4].clear()
+        axs2[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
+        axs2[4].plot(l_custom(0.5,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.5')
+        axs2[4].plot(l_custom(0.1,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.1')
+        
+        axs2[4].set_title("Lock-in-function", fontsize=8)
+        #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
+        axs2[4].set_ylim(10,0)
+        axs2[4].legend(loc = 'lower left')
+
+        for ax in axs2[1:]:
+            ax.tick_params(left=False)
+            ax.set_yticklabels([])
+        
+        figure2.subplots_adjust(wspace=0.1)
+        canvas2.draw()
+        
+    except (ValueError, ZeroDivisionError) as e:
+        return 
+    
 
 # Создание главного окна
 root = tk.Tk()
@@ -497,68 +586,81 @@ notebook.add(tab1, text='Inverse')
 left_frame = tk.Frame(tab1)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-tk.Label(left_frame, text="d0 low:").grid(row=0, column=0)
+tk.Label(left_frame, text = "Depths:").grid(row = 0, column= 0, columnspan = 2)
+
+tk.Label(left_frame, text="d0 low:").grid(row=1, column=0)
 entry_d0_low = tk.Entry(left_frame)
-entry_d0_low.grid(row=0, column=1)
+entry_d0_low.grid(row=1, column=1)
 entry_d0_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d0 high:").grid(row=0, column=2)
+tk.Label(left_frame, text="d0 high:").grid(row=1, column=2)
 entry_d0_high = tk.Entry(left_frame)
-entry_d0_high.grid(row=0, column=3)
+entry_d0_high.grid(row=1, column=3)
 entry_d0_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="d1 low:").grid(row=1, column=0)
+tk.Label(left_frame, text="d1 low:").grid(row=2, column=0)
 entry_d1_low = tk.Entry(left_frame)
-entry_d1_low.grid(row=1, column=1)
+entry_d1_low.grid(row=2, column=1)
 entry_d1_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d1 high:").grid(row=1, column=2)
+tk.Label(left_frame, text="d1 high:").grid(row=2, column=2)
 entry_d1_high = tk.Entry(left_frame)
-entry_d1_high.grid(row=1, column=3)
+entry_d1_high.grid(row=2, column=3)
 entry_d1_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="d2 low:").grid(row=2, column=0)
+tk.Label(left_frame, text="d2 low:").grid(row=3, column=0)
 entry_d2_low = tk.Entry(left_frame)
-entry_d2_low.grid(row=2, column=1)
+entry_d2_low.grid(row=3, column=1)
 entry_d2_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d2 high:").grid(row=2, column=2)
+tk.Label(left_frame, text="d2 high:").grid(row=3, column=2)
 entry_d2_high = tk.Entry(left_frame)
-entry_d2_high.grid(row=2, column=3)
+entry_d2_high.grid(row=3, column=3)
 entry_d2_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="d3 low:").grid(row=3, column=0)
+tk.Label(left_frame, text="d3 low:").grid(row=4, column=0)
 entry_d3_low = tk.Entry(left_frame)
-entry_d3_low.grid(row=3, column=1)
+entry_d3_low.grid(row=4, column=1)
 entry_d3_low.insert(0, "1.0")
 
-tk.Label(left_frame, text="d3 high:").grid(row=3, column=2)
+tk.Label(left_frame, text="d3 high:").grid(row=4, column=2)
 entry_d3_high = tk.Entry(left_frame)
-entry_d3_high.grid(row=3, column=3)
+entry_d3_high.grid(row=4, column=3)
 entry_d3_high.insert(0, "1.0")
 
-tk.Label(left_frame, text="с1").grid(row=4, column=0)
-entry_с1 = tk.Entry(left_frame)
-entry_с1.grid(row=4, column=1)
+ez_button = tk.Button(left_frame, text="Import e(z)", command=load_file)
+ez_button.grid(row = 5, column = 0, columnspan = 2 )
+
+tk.Label(left_frame, text = "Field parametrs:").grid(row=6, column=0, columnspan = 2)
+
+
+tk.Label(left_frame, text="с1").grid(row=7, column=0)
+c1_var_inverse = tk.StringVar()
+entry_с1 = tk.Entry(left_frame, textvariable = c1_var_inverse)
+entry_с1.grid(row=7, column=1)
 entry_с1.insert(0, "1.0")
 
-tk.Label(left_frame, text="с2").grid(row=4, column=2)
-entry_с2 = tk.Entry(left_frame)
-entry_с2.grid(row=4, column=3)
+tk.Label(left_frame, text="с2").grid(row=7, column=2)
+c2_var_inverse = tk.StringVar()
+entry_с2 = tk.Entry(left_frame, textvariable = c2_var_inverse)
+entry_с2.grid(row=7, column=3)
 entry_с2.insert(0, "1.0")
 
+c1_var_inverse.trace_add("write", field_change_inverse)
+c2_var_inverse.trace_add("write", field_change_inverse)
+
 entry_calc_times_label = tk.Label(left_frame, text="Calculation times:")
-entry_calc_times_label.grid(row=5, column=1, columnspan=2)
+entry_calc_times_label.grid(row=8, column=1, columnspan=2)
 
 entry_calc_times = tk.Entry(left_frame)
-entry_calc_times.grid(row=5, column=3)
+entry_calc_times.grid(row=8, column=3)
 entry_calc_times.insert(0, "10")
 
 compute_button = tk.Button(left_frame, text="Compute", command=compute)
-compute_button.grid(row=6, columnspan=4, pady=10)
+compute_button.grid(row=9, columnspan=4, pady=10)
 
 image_label_tab1 = tk.Label(left_frame, text="Image Placeholder")
-image_label_tab1.grid(row=7, columnspan=4, pady=10)
+image_label_tab1.grid(row=10, columnspan=4, pady=10)
 
 # Рамка для отображения решений
 solution_frame = tk.Frame(tab1)
@@ -620,39 +722,59 @@ left_frame2 = tk.Frame(tab2)
 left_frame2.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
 # Textboxes and Button in Second Tab
-tk.Label(left_frame2, text="d0:").grid(row=0, column=0)
-entry_d0 = tk.Entry(left_frame2)
-entry_d0.grid(row=0, column=1)
+tk.Label(left_frame2, text = "Depths:").grid(row = 0, column= 0, columnspan = 2)
+
+tk.Label(left_frame2, text="d0:").grid(row=1, column=0)
+d0_val_forvard = tk.StringVar()
+entry_d0 = tk.Entry(left_frame2, textvariable = d0_val_forvard)
+entry_d0.grid(row=1, column=1)
 entry_d0.insert(0, "1.0")
 
-tk.Label(left_frame2, text="d1:").grid(row=1, column=0)
-entry_d1 = tk.Entry(left_frame2)
-entry_d1.grid(row=1, column=1)
+tk.Label(left_frame2, text="d1:").grid(row=2, column=0)
+d1_val_forvard = tk.StringVar()
+entry_d1 = tk.Entry(left_frame2, textvariable = d1_val_forvard)
+entry_d1.grid(row=2, column=1)
 entry_d1.insert(0, "1.0")
 
-tk.Label(left_frame2, text="d2:").grid(row=2, column=0)
-entry_d2 = tk.Entry(left_frame2)
-entry_d2.grid(row=2, column=1)
+tk.Label(left_frame2, text="d2:").grid(row=3, column=0)
+d2_val_forvard = tk.StringVar()
+entry_d2 = tk.Entry(left_frame2, textvariable = d2_val_forvard)
+entry_d2.grid(row=3, column=1)
 entry_d2.insert(0, "1.0")
 
-tk.Label(left_frame2, text="d3:").grid(row=3, column=0)
-entry_d3 = tk.Entry(left_frame2)
-entry_d3.grid(row=3, column=1)
+tk.Label(left_frame2, text="d3:").grid(row=4, column=0)
+d3_val_forvard = tk.StringVar()
+entry_d3 = tk.Entry(left_frame2, textvariable = d3_val_forvard)
+entry_d3.grid(row=4, column=1)
 entry_d3.insert(0, "1.0")
 
-tk.Label(left_frame2, text="c1:").grid(row=4, column=0)
-entry_c1_d = tk.Entry(left_frame2)
-entry_c1_d.grid(row=4, column=1)
+d0_val_forvard.trace_add("write", depth_changed_forvard)
+d1_val_forvard.trace_add("write", depth_changed_forvard)
+d2_val_forvard.trace_add("write", depth_changed_forvard)
+d3_val_forvard.trace_add("write", depth_changed_forvard)
+
+ez_button_forvard = tk.Button(left_frame2, text = "Import e(z)", command = load_file)
+ez_button_forvard.grid(row = 5, column = 0, columnspan = 2)
+
+tk.Label(left_frame2, text = "Field parametrs:").grid(row=6, column=0, columnspan = 2)
+
+tk.Label(left_frame2, text="c1:").grid(row=7, column=0)
+c1_var_forvard = tk.StringVar()
+entry_c1_d = tk.Entry(left_frame2, textvariable=c1_var_forvard)
+entry_c1_d.grid(row=7, column=1)
 entry_c1_d.insert(0, "1.0")
 
-tk.Label(left_frame2, text="c2:").grid(row=5, column=0)
-entry_c2_d = tk.Entry(left_frame2)
-entry_c2_d.grid(row=5, column=1)
+tk.Label(left_frame2, text="c2:").grid(row=8, column=0)
+c2_var_forvard = tk.StringVar()
+entry_c2_d = tk.Entry(left_frame2, textvariable=c2_var_forvard)
+entry_c2_d.grid(row=8, column=1)
 entry_c2_d.insert(0, "1.0")
 
+c1_var_forvard.trace_add("write", field_change_forvard)
+c2_var_forvard.trace_add("write", field_change_forvard)
 
 compute_button2 = tk.Button(left_frame2, text="Compute", command=direct_comptue)
-compute_button2.grid(row=6, columnspan=2, pady=10)
+compute_button2.grid(row=9, columnspan=2, pady=10)
 
 #image_label_tab2 = tk.Label(left_frame2, text="Image Placeholder")
 #mage_label_tab2.grid(row=8, columnspan=2, pady=10)
