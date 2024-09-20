@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from matplotlib.ticker import MultipleLocator
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -533,6 +534,8 @@ def field_change_inverse(*args):
 def depth_changed_forvard(*args):
     
     try:
+        
+        
         d0 = parse_float(entry_d0.get())
         d1 = parse_float(entry_d1.get())
         d2 = parse_float(entry_d2.get())
@@ -544,11 +547,25 @@ def depth_changed_forvard(*args):
         axs2[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
         axs2[4].plot(l_custom(0.5,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.5')
         axs2[4].plot(l_custom(0.1,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.1')
-        
+        axs2[4].legend(loc = 'lower left')
         axs2[4].set_title("Lock-in-function", fontsize=8)
         #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
-        axs2[4].set_ylim(10,0)
-        axs2[4].legend(loc = 'lower left')
+        
+        if axs2[1].get_lines():
+            yticks = axs2[0].get_yticks() 
+            
+            tick_interval = yticks[1] - yticks[0]
+            axs2[4].yaxis.set_major_locator(MultipleLocator(tick_interval))
+            
+            set_visual_scale([axs2[4]], axs2[0], tick_interval)
+            
+            
+            axs2[4].invert_yaxis()
+            #axs2[4].set_yticks()
+            
+        else:
+            axs2[4].set_ylim(10,0)
+        
 
         for ax in axs2[1:]:
             ax.tick_params(left=False)
@@ -560,6 +577,48 @@ def depth_changed_forvard(*args):
     except (ValueError, ZeroDivisionError) as e:
         return 
     
+def set_visual_scale(axes, ref_ax, ref_interval):
+    """
+    Adjusts only the ymax of the given axes to have identical visual tick intervals based on the reference axis.
+    The ymin remains unchanged. Supports reversed scale on the reference axis.
+    
+    Parameters:
+    - axes: List of axes to adjust.
+    - ref_ax: The reference axis to base the visual interval on.
+    - ref_interval: The tick interval on the reference axis.
+    """
+    # Get the pixel height of one interval on the reference axis
+    ref_figure_height = ref_ax.get_window_extent().height
+    ref_ylim = ref_ax.get_ylim()
+    ref_range = abs(ref_ylim[1] - ref_ylim[0])  # Use absolute value to handle reversed axes
+    ref_pixels_per_unit = ref_figure_height / ref_range
+    
+    # Calculate the pixel height of one tick interval on the reference axis
+    ref_pixel_interval = ref_pixels_per_unit * ref_interval
+    
+    for ax in axes:
+        if ax == ref_ax:
+            continue
+        
+        # Get the current axis height in pixels
+        ax_figure_height = ax.get_window_extent().height
+        
+        # Calculate the new ymax value to match the reference visual scale
+        new_range = ax_figure_height / ref_pixels_per_unit
+        
+        # Calculate the new ymax, considering if the reference axis is reversed
+        ax_ymin, ax_ymax = ax.get_ylim()
+        if ref_ylim[0] < ref_ylim[1]:  # Reference axis is not reversed
+            new_ymax = ax_ymin + new_range
+        else:  # Reference axis is reversed
+            new_ymax = ax_ymin - new_range
+        
+        # Ensure new_ymax is positive if required
+        if new_ymax < 0:
+            new_ymax = abs(new_ymax)
+        
+        # Set new y-limits with unchanged ymin and adjusted ymax
+        ax.set_ylim(0, new_ymax)
 
 # Создание главного окна
 root = tk.Tk()
