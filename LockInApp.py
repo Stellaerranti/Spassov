@@ -662,7 +662,7 @@ notebook.add(tab1, text='Inverse')
 left_frame = tk.Frame(tab1)
 left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-tk.Label(left_frame, text = "Depths:").grid(row = 0, column= 0, columnspan = 2)
+tk.Label(left_frame, text = "Depths ranges:").grid(row = 0, column= 0, columnspan = 2)
 
 tk.Label(left_frame, text="d0 low:").grid(row=1, column=0)
 entry_d0_low = tk.Entry(left_frame)
@@ -798,7 +798,7 @@ left_frame2 = tk.Frame(tab2)
 left_frame2.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
 # Textboxes and Button in Second Tab
-tk.Label(left_frame2, text = "Depths:").grid(row = 0, column= 0, columnspan = 2)
+tk.Label(left_frame2, text = "Depths (filter parameters):").grid(row = 0, column= 0, columnspan = 2)
 
 tk.Label(left_frame2, text="d0:").grid(row=1, column=0)
 d0_val_forvard = tk.StringVar()
