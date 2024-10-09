@@ -16,6 +16,10 @@ from scipy.optimize import dual_annealing
 from scipy.optimize import differential_evolution
 from PIL import Image, ImageTk
 
+blue_color = plt.get_cmap('tab10')(0)
+
+photo = None
+
 depth_obs = None
 fraction_data = None
 polarity = None
@@ -26,6 +30,21 @@ selected_optimization = "L-BFGS-B"
 c1 = 73.4
 c2 = 74.
 
+
+def create_image_label(frame, image_path, row, columnspan):
+    global photo  # Используем глобальную переменную для хранения изображения
+
+    # Загружаем изображение с помощью PIL
+    image = Image.open(image_path)
+    image = image.resize((200, 200))  # При необходимости изменяем размер изображения
+    photo = ImageTk.PhotoImage(image)  # Сохраняем объект в глобальной переменной
+
+    # Создаем Label для изображения и размещаем его на Frame с помощью grid
+    label = tk.Label(frame, image=photo)
+    label.photo = photo  # Сохраняем ссылку на изображение в атрибуте виджета
+    label.grid(row=row, column=0, columnspan=columnspan, pady=10)  # Размещаем под кнопкой "Compute"
+
+    return label
 def parse_float(value):
     try:
         # Replace commas with periods
@@ -223,11 +242,11 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     axs[0].set_ylabel('Depth')
 
 
-    axs[1].plot(fraction_data,depth_obs)
+    axs[1].plot(fraction_data,depth_obs, color = blue_color)
     axs[1].set_title("e(z)", fontsize=8)
     axs[1].set_ylim(depth_obs[-1],depth_obs[0])
 
-    axs[2].plot(polarity, depth_obs)
+    axs[2].plot(polarity, depth_obs, color = blue_color)
     axs[2].set_title("Observed polarity", fontsize=8)
     axs[2].set_ylim(depth_obs[-1],depth_obs[0])
     
@@ -250,11 +269,11 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     axs2[0].set_ylabel('Depth')
 
 
-    axs2[1].plot(fraction_data,depth_obs)
+    axs2[1].plot(fraction_data,depth_obs, color = blue_color)
     axs2[1].set_title("e(z)", fontsize=8)
     axs2[1].set_ylim(depth_obs[-1],depth_obs[0])
 
-    axs2[2].plot(polarity, depth_obs)
+    axs2[2].plot(polarity, depth_obs, color = blue_color)
     axs2[2].set_title("Observed polarity", fontsize=8)
     axs2[2].set_ylim(depth_obs[-1],depth_obs[0])
     
@@ -283,21 +302,21 @@ def update_graphs(params):
     for ax in axs:
         ax.clear()
 
-    axs[0].plot(H(depth_obs), depth_obs)
+    axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
     axs[0].set_title("Field polarity", fontsize=8)
     axs[0].set_ylim(depth_obs[-1],depth_obs[0])
     axs[0].set_ylabel('Depth')
 
 
-    axs[1].plot(fraction_data,depth_obs)
+    axs[1].plot(fraction_data,depth_obs, color = blue_color)
     axs[1].set_title("e(z)", fontsize=8)
     axs[1].set_ylim(depth_obs[-1],depth_obs[0])
 
-    axs[2].plot(polarity, depth_obs)
+    axs[2].plot(polarity, depth_obs, color = blue_color)
     axs[2].set_title("Observed polarity", fontsize=8)
     axs[2].set_ylim(depth_obs[-1],depth_obs[0])
     
-    axs[3].plot(get_magnetisation(depth_obs, params),depth_obs)
+    axs[3].plot(get_magnetisation(depth_obs, params),depth_obs, color = blue_color)
     axs[3].set_title("Modeled polarity", fontsize=8)
     axs[3].set_ylim(depth_obs[-1],depth_obs[0])
 
@@ -464,7 +483,7 @@ def direct_comptue():
         #H_obs = H(depth_obs)
         
         axs2[0].clear()
-        axs2[0].plot(H(depth_obs), depth_obs)
+        axs2[0].plot(H(depth_obs), depth_obs, color = blue_color)
         axs2[0].set_title("Field polarity", fontsize=8)
         axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
         axs2[0].set_xlim(-1.1,1.1)
@@ -475,7 +494,7 @@ def direct_comptue():
         #axs2[1].set_ylim(depth_obs[-1],depth_obs[0])
         
         axs2[3].clear()
-        axs2[3].plot(get_magnetisation(depth_obs, params),depth_obs)
+        axs2[3].plot(get_magnetisation(depth_obs, params),depth_obs, color = blue_color)
         axs2[3].set_title("Modeled polarity", fontsize=8)
         axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
         
@@ -526,7 +545,7 @@ def field_change_forvard(*args):
         c2 = parse_float(entry_c2_d.get())
         
         axs2[0].clear()
-        axs2[0].plot(H(depth_obs), depth_obs)
+        axs2[0].plot(H(depth_obs), depth_obs, color = blue_color)
         axs2[0].set_title("Field polarity", fontsize=8)
         axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
         axs2[0].set_xlim(-1.1,1.1)
@@ -552,7 +571,7 @@ def field_change_inverse(*args):
         c2 = parse_float(entry_с2.get())
         
         axs[0].clear()
-        axs[0].plot(H(depth_obs), depth_obs)
+        axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
         axs[0].set_title("Field polarity", fontsize=8)
         axs[0].set_ylim(depth_obs[-1],depth_obs[0])
         axs[0].set_ylabel('Depth')        
@@ -767,6 +786,10 @@ solution_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 placeholder_label = tk.Label(solution_frame, text="Выберите решение", font=("Arial", 12), fg="grey")
 placeholder_label.pack()
 
+image_path = "ez.png" 
+
+image_label_tab1 = create_image_label(left_frame, image_path, 10, 4)
+
 param1 = 1.0
 param2 = 1.0
 
@@ -875,6 +898,12 @@ c2_var_forvard.trace_add("write", field_change_forvard)
 
 compute_button2 = tk.Button(left_frame2, text="Compute", command=direct_comptue)
 compute_button2.grid(row=9, columnspan=2, pady=10)
+
+image_path = 'ez.png'
+
+#image_canvas_tab2 = create_image_on_canvas(left_frame2, 'ez.png', 10, 2)
+
+image_label_tab2 = create_image_label(left_frame2, image_path, 10, 4)
 
 #image_label_tab2 = tk.Label(left_frame2, text="Image Placeholder")
 #mage_label_tab2.grid(row=8, columnspan=2, pady=10)
