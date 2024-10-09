@@ -775,9 +775,6 @@ entry_calc_times.insert(0, "10")
 compute_button = tk.Button(left_frame, text="Compute", command=compute)
 compute_button.grid(row=9, columnspan=4, pady=10)
 
-image_label_tab1 = tk.Label(left_frame, text="Image Placeholder")
-image_label_tab1.grid(row=10, columnspan=4, pady=10)
-
 # Рамка для отображения решений
 solution_frame = tk.Frame(tab1)
 solution_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
@@ -788,7 +785,9 @@ placeholder_label.pack()
 
 image_path = "ez.png" 
 
-image_label_tab1 = create_image_label(left_frame, image_path, 10, 4)
+tk.Label(left_frame, text = "e(z) - CRM/PDRM ratio").grid(row = 10, column= 1, columnspan = 2)
+
+image_label_tab1 = create_image_label(left_frame, image_path, 11, 4)
 
 param1 = 1.0
 param2 = 1.0
@@ -903,7 +902,9 @@ image_path = 'ez.png'
 
 #image_canvas_tab2 = create_image_on_canvas(left_frame2, 'ez.png', 10, 2)
 
-image_label_tab2 = create_image_label(left_frame2, image_path, 10, 4)
+tk.Label(left_frame2, text = "e(z) - CRM/PDRM ratio").grid(row = 10, column= 0, columnspan = 2)
+
+image_label_tab2 = create_image_label(left_frame2, image_path, 11 , 4)
 
 #image_label_tab2 = tk.Label(left_frame2, text="Image Placeholder")
 #mage_label_tab2.grid(row=8, columnspan=2, pady=10)
