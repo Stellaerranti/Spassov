@@ -50,7 +50,7 @@ def e(z):
     idx = np.where(np.isclose(depth_obs, z))[0]
     idx = idx[0]
     
-    return fraction_data[idx]
+    return 1-fraction_data[idx]
 
 def H(z):
     return -tanh(((c2+c1)*(z-(c2+c1)/2))/(c2-c1))
@@ -69,7 +69,22 @@ def integral(s,z,a1,a2,b1,b2):
 
 def functional_integration(z,a1,a2,b1,b2):        
     return quad(integral, 0, z, args=(z,a1,a2,b1,b2))[0]
+'''
+def functional_integration(z, a1, a2, b1, b2):
+    # Use quad with scalar z, converting array inputs to floats
+    result, _ = quad(lambda s: integral(s, float(z), a1, a2, b1, b2), 0, float(z))
+    return result
+'''
+def get_magnetisation(z, params):
+    a1, a2, b1, b2 = params
+    
+    # Vectorize the integration function to handle array inputs
+    vec_func_integration = np.vectorize(functional_integration)
+    M = vec_func_integration(z, a1, a2, b1, b2)
+    
+    return np.tanh(M * 10**3)
 
+'''
 def get_magnetisation(z,params):
 
     a1,a2,b1,b2 = params
@@ -78,7 +93,7 @@ def get_magnetisation(z,params):
     M = vec_expint(z,a1,a2,b1,b2)
     
     return tanh(M*10**3)
-
+'''
 def huber_loss(params, z_data, M_obs, delta=1.0):
     # Unpack parameters
     a1, a2, b1, b2 = params
@@ -446,10 +461,13 @@ def direct_comptue():
          #   ax.clear()
         #M_modeled = get_magnetisation(depth_obs, params)
         
+        #H_obs = H(depth_obs)
+        
         axs2[0].clear()
         axs2[0].plot(H(depth_obs), depth_obs)
         axs2[0].set_title("Field polarity", fontsize=8)
         axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+        axs2[0].set_xlim(-1.1,1.1)
         axs2[0].set_ylabel('Depth')
         
         #axs2[1].plot(fraction_data,depth_obs)
@@ -511,6 +529,7 @@ def field_change_forvard(*args):
         axs2[0].plot(H(depth_obs), depth_obs)
         axs2[0].set_title("Field polarity", fontsize=8)
         axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+        axs2[0].set_xlim(-1.1,1.1)
         axs2[0].set_ylabel('Depth')
         
         for ax in axs2[1:]:
@@ -550,13 +569,15 @@ def field_change_inverse(*args):
 
 def depth_changed_forvard(*args):
     
-    try:
-        
-        
+    try:        
+                
         d0 = parse_float(entry_d0.get())
         d1 = parse_float(entry_d1.get())
         d2 = parse_float(entry_d2.get())
         d3 = parse_float(entry_d3.get())
+        
+        if d3 < d2:
+            return 
         
         params = get_params_from_depths([d0,d1,d2,d3])
         
@@ -845,6 +866,9 @@ c2_var_forvard = tk.StringVar()
 entry_c2_d = tk.Entry(left_frame2, textvariable=c2_var_forvard)
 entry_c2_d.grid(row=8, column=1)
 entry_c2_d.insert(0, "1.0")
+
+#entry_c2_d.bind("<FocusOut>", field_change_forvard)
+#entry_c1_d.bind("<FocusOut>", field_change_forvard)
 
 c1_var_forvard.trace_add("write", field_change_forvard)
 c2_var_forvard.trace_add("write", field_change_forvard)
