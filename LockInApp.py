@@ -148,10 +148,10 @@ def on_optimization_change(event):
     selected_option = optimization_combobox.get()
     if selected_option == "Brute-Force":
         entry_calc_times_label.config(text="Step")
-        entry_calc_times_label.grid(row=5, column=1, columnspan=2)
+        entry_calc_times_label.grid(row=8, column=1, columnspan=2)
     else:
         entry_calc_times_label.config(text="Calculation times")    
-        entry_calc_times_label.grid(row=5, column=1, columnspan=2)
+        entry_calc_times_label.grid(row=8, column=1, columnspan=2)
 
 # Функция для открытия окна настроек
 def open_options():
@@ -245,6 +245,7 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     axs[1].plot(fraction_data,depth_obs, color = blue_color)
     axs[1].set_title("e(z)", fontsize=8)
     axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[1].set_xlim(0,1.1)
 
     axs[2].plot(polarity, depth_obs, color = blue_color)
     axs[2].set_title("Observed polarity", fontsize=8)
@@ -263,6 +264,9 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     figure.subplots_adjust(wspace=0.1)
     canvas.draw()
     
+    for ax in axs2:
+        ax.clear()
+    
     axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
     axs2[0].set_title("Field polarity", fontsize=8)
     axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
@@ -272,6 +276,7 @@ def process_loaded_data(depth_obs, fraction_data, polarity):
     axs2[1].plot(fraction_data,depth_obs, color = blue_color)
     axs2[1].set_title("e(z)", fontsize=8)
     axs2[1].set_ylim(depth_obs[-1],depth_obs[0])
+    axs2[1].set_xlim(0,1.1)
 
     axs2[2].plot(polarity, depth_obs, color = blue_color)
     axs2[2].set_title("Observed polarity", fontsize=8)
