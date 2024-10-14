@@ -72,7 +72,8 @@ def e(z):
     return 1-fraction_data[idx]
 
 def H(z):
-    return -tanh(((c2+c1)*(z-(c2+c1)/2))/(c2-c1))
+    return -tanh(2*(z-c1)/(c2-c1) - 1)
+    #return -tanh(((c2+c1)*(z-(c2+c1)/2))/(c2-c1))
 
 def l (z,s,a1,b1,a2,b2):
     return e(z)/(1+exp(-a1*s+b1)) + (1-e(z))/(1+exp(-a2*s+b2))
@@ -310,12 +311,14 @@ def update_graphs(params):
     axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
     axs[0].set_title("Field polarity", fontsize=8)
     axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[0].set_xlim(-1.1,1.1)
     axs[0].set_ylabel('Depth')
 
 
     axs[1].plot(fraction_data,depth_obs, color = blue_color)
     axs[1].set_title("e(z)", fontsize=8)
     axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+    axs[1].set_xlim(0,1.1)
 
     axs[2].plot(polarity, depth_obs, color = blue_color)
     axs[2].set_title("Observed polarity", fontsize=8)
@@ -325,10 +328,30 @@ def update_graphs(params):
     axs[3].set_title("Modeled polarity", fontsize=8)
     axs[3].set_ylim(depth_obs[-1],depth_obs[0])
 
-    axs[4].plot(l(depth_obs[0],depth_obs,a1,b1,a2,b2),depth_obs)
-    axs[4].set_title("Lock-in-function", fontsize=8)
-    axs[4].set_ylim(depth_obs[-1],depth_obs[0])
 
+    #params = get_params_from_depths([d0,d1,d2,d3])
+    
+    axs[4].clear()
+    axs[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
+    axs[4].plot(l_custom(0.5,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.5')
+    axs[4].plot(l_custom(0.1,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.1')
+    axs[4].legend(loc = 'lower left')
+    axs[4].set_title("Lock-in-function", fontsize=8)
+
+    if axs[1].get_lines():
+        yticks = axs[0].get_yticks() 
+        
+        tick_interval = yticks[1] - yticks[0]
+        axs[4].yaxis.set_major_locator(MultipleLocator(tick_interval))
+        
+        set_visual_scale([axs[4]], axs[0], tick_interval)
+        
+        
+        axs[4].invert_yaxis()
+        #axs2[4].set_yticks()
+        
+    else:
+        axs[4].set_ylim(10,0)
 
     for ax in axs[1:]:
         ax.tick_params(left=False)
@@ -579,6 +602,7 @@ def field_change_inverse(*args):
         axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
         axs[0].set_title("Field polarity", fontsize=8)
         axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+        axs[0].set_xlim(-1.1,1.1)
         axs[0].set_ylabel('Depth')        
         
         for ax in axs[1:]:
