@@ -72,7 +72,7 @@ def e(z):
     return 1-fraction_data[idx]
 
 def H(z):
-    return -tanh(2*(z-c1)/(c2-c1) - 1)
+    return -tanh(2*(z-(c1+c2)/2)/(c2-c1))
     #return -tanh(((c2+c1)*(z-(c2+c1)/2))/(c2-c1))
 
 def l (z,s,a1,b1,a2,b2):
