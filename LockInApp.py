@@ -525,7 +525,7 @@ def direct_comptue():
         axs2[2].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         axs2[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         axs2[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
-        
+        '''
         if axs2[1].get_lines():
             yticks = axs2[0].get_yticks() 
             
@@ -540,7 +540,7 @@ def direct_comptue():
             
         else:
             axs2[4].set_ylim(10,0)
-        
+        '''
         '''
         axs2[4].clear()
         axs2[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
