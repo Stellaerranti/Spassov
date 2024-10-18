@@ -310,24 +310,28 @@ def update_graphs(params):
 
     axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
     axs[0].set_title("Field polarity", fontsize=8)
-    axs[0].set_ylim(depth_obs[-1],depth_obs[0])
+    #axs[0].set_ylim(depth_obs[-1],depth_obs[0])
     axs[0].set_xlim(-1.1,1.1)
     axs[0].set_ylabel('Depth')
 
 
     axs[1].plot(fraction_data,depth_obs, color = blue_color)
     axs[1].set_title("e(z)", fontsize=8)
-    axs[1].set_ylim(depth_obs[-1],depth_obs[0])
+    #axs[1].set_ylim(depth_obs[-1],depth_obs[0])
     axs[1].set_xlim(0,1.1)
 
     axs[2].plot(polarity, depth_obs, color = blue_color)
     axs[2].set_title("Observed polarity", fontsize=8)
-    axs[2].set_ylim(depth_obs[-1],depth_obs[0])
+    #axs[2].set_ylim(depth_obs[-1],depth_obs[0])
     
     axs[3].plot(get_magnetisation(depth_obs, params),depth_obs, color = blue_color)
     axs[3].set_title("Modeled polarity", fontsize=8)
-    axs[3].set_ylim(depth_obs[-1],depth_obs[0])
+    #axs[3].set_ylim(depth_obs[-1],depth_obs[0])
 
+    axs[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+    axs[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+    axs[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+    axs[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
 
     #params = get_params_from_depths([d0,d1,d2,d3])
     
@@ -509,22 +513,31 @@ def direct_comptue():
         #M_modeled = get_magnetisation(depth_obs, params)
         
         #H_obs = H(depth_obs)
-        
-        axs2[0].clear()
-        axs2[0].plot(H(depth_obs), depth_obs, color = blue_color)
-        axs2[0].set_title("Field polarity", fontsize=8)
-        axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
-        axs2[0].set_xlim(-1.1,1.1)
-        axs2[0].set_ylabel('Depth')
-        
-        #axs2[1].plot(fraction_data,depth_obs)
-        #axs2[1].set_title("e(z)", fontsize=8)
-        #axs2[1].set_ylim(depth_obs[-1],depth_obs[0])
-        
+
         axs2[3].clear()
         axs2[3].plot(get_magnetisation(depth_obs, params),depth_obs, color = blue_color)
         axs2[3].set_title("Modeled polarity", fontsize=8)
-        axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
+        #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
+        
+        axs2[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        
+        if axs2[1].get_lines():
+            yticks = axs2[0].get_yticks() 
+            
+            tick_interval = yticks[1] - yticks[0]
+            axs2[4].yaxis.set_major_locator(MultipleLocator(tick_interval))
+            
+            set_visual_scale([axs2[4]], axs2[0], tick_interval)
+            
+            
+            axs2[4].invert_yaxis()
+            #axs2[4].set_yticks()
+            
+        else:
+            axs2[4].set_ylim(10,0)
         
         '''
         axs2[4].clear()
@@ -572,12 +585,19 @@ def field_change_forvard(*args):
         c1 = parse_float(entry_c1_d.get())
         c2 = parse_float(entry_c2_d.get())
         
+        depth_h = np.linspace(min(depth_obs[0],c1),max(depth_obs[-1],c2),200)
+        
         axs2[0].clear()
-        axs2[0].plot(H(depth_obs), depth_obs, color = blue_color)
+        axs2[0].plot(H(depth_h), depth_h, color = blue_color)
         axs2[0].set_title("Field polarity", fontsize=8)
-        axs2[0].set_ylim(depth_obs[-1],depth_obs[0])
+        
         axs2[0].set_xlim(-1.1,1.1)
         axs2[0].set_ylabel('Depth')
+        
+        axs2[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
         
         for ax in axs2[1:]:
             ax.tick_params(left=False)
@@ -598,12 +618,19 @@ def field_change_inverse(*args):
         c1 = parse_float(entry_с1.get())
         c2 = parse_float(entry_с2.get())
         
+        depth_h = np.linspace(min(depth_obs[0],c1),max(depth_obs[-1],c2),200)
+        
         axs[0].clear()
-        axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
+        axs[0].plot(H(depth_h), depth_h, color = blue_color)
         axs[0].set_title("Field polarity", fontsize=8)
         axs[0].set_ylim(depth_obs[-1],depth_obs[0])
         axs[0].set_xlim(-1.1,1.1)
-        axs[0].set_ylabel('Depth')        
+        axs[0].set_ylabel('Depth') 
+        
+        axs[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
         
         for ax in axs[1:]:
             ax.tick_params(left=False)
