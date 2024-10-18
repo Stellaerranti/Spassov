@@ -307,8 +307,10 @@ def update_graphs(params):
 
     for ax in axs:
         ax.clear()
+        
+    depth_h = np.linspace(min(depth_obs[0],c1-1),max(depth_obs[-1],c2+1),200)
 
-    axs[0].plot(H(depth_obs), depth_obs, color = blue_color)
+    axs[0].plot(H(depth_h), depth_h, color = blue_color)
     axs[0].set_title("Field polarity", fontsize=8)
     #axs[0].set_ylim(depth_obs[-1],depth_obs[0])
     axs[0].set_xlim(-1.1,1.1)
@@ -328,10 +330,10 @@ def update_graphs(params):
     axs[3].set_title("Modeled polarity", fontsize=8)
     #axs[3].set_ylim(depth_obs[-1],depth_obs[0])
 
-    axs[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-    axs[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-    axs[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-    axs[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+    axs[3].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+    axs[2].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+    axs[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+    axs[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
 
     #params = get_params_from_depths([d0,d1,d2,d3])
     
@@ -519,10 +521,10 @@ def direct_comptue():
         axs2[3].set_title("Modeled polarity", fontsize=8)
         #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
         
-        axs2[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs2[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs2[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs2[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[3].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs2[2].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs2[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs2[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         
         if axs2[1].get_lines():
             yticks = axs2[0].get_yticks() 
@@ -585,7 +587,7 @@ def field_change_forvard(*args):
         c1 = parse_float(entry_c1_d.get())
         c2 = parse_float(entry_c2_d.get())
         
-        depth_h = np.linspace(min(depth_obs[0],c1),max(depth_obs[-1],c2),200)
+        depth_h = np.linspace(min(depth_obs[0],c1-1),max(depth_obs[-1],c2+1),200)
         
         axs2[0].clear()
         axs2[0].plot(H(depth_h), depth_h, color = blue_color)
@@ -594,10 +596,10 @@ def field_change_forvard(*args):
         axs2[0].set_xlim(-1.1,1.1)
         axs2[0].set_ylabel('Depth')
         
-        axs2[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs2[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs2[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs2[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs2[3].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs2[2].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs2[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs2[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         
         for ax in axs2[1:]:
             ax.tick_params(left=False)
@@ -618,7 +620,7 @@ def field_change_inverse(*args):
         c1 = parse_float(entry_с1.get())
         c2 = parse_float(entry_с2.get())
         
-        depth_h = np.linspace(min(depth_obs[0],c1),max(depth_obs[-1],c2),200)
+        depth_h = np.linspace(min(depth_obs[0],c1-1),max(depth_obs[-1],c2+1),200)
         
         axs[0].clear()
         axs[0].plot(H(depth_h), depth_h, color = blue_color)
@@ -627,10 +629,10 @@ def field_change_inverse(*args):
         axs[0].set_xlim(-1.1,1.1)
         axs[0].set_ylabel('Depth') 
         
-        axs[3].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs[2].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs[1].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
-        axs[0].set_ylim(max(depth_obs[-1],c2),min(depth_obs[0],c1))
+        axs[3].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs[2].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
+        axs[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         
         for ax in axs[1:]:
             ax.tick_params(left=False)
@@ -643,6 +645,7 @@ def field_change_inverse(*args):
         return   
 
 def depth_changed_forvard(*args):
+    global c1,c2  
     
     try:        
                 
@@ -651,15 +654,23 @@ def depth_changed_forvard(*args):
         d2 = parse_float(entry_d2.get())
         d3 = parse_float(entry_d3.get())
         
+        c1 = parse_float(entry_c1_d.get())
+        c2 = parse_float(entry_c2_d.get())
+        
         if d3 < d2:
             return 
         
         params = get_params_from_depths([d0,d1,d2,d3])
         
+        if (abs(c2-c1) < 10):
+            depth_lock = np.linspace(0,10,50)
+        else:
+            depth_lock = np.linspace(0,c2,100)
+        
         axs2[4].clear()
-        axs2[4].plot(l_custom(0.9,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.9')
-        axs2[4].plot(l_custom(0.5,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.5')
-        axs2[4].plot(l_custom(0.1,np.linspace(0,10,50),params[0],params[2],params[1],params[3]),np.linspace(0,10,50), label = 'e(z) = 0.1')
+        axs2[4].plot(l_custom(0.9,depth_lock,params[0],params[2],params[1],params[3]),depth_lock, label = 'e(z) = 0.9')
+        axs2[4].plot(l_custom(0.5,depth_lock,params[0],params[2],params[1],params[3]),depth_lock, label = 'e(z) = 0.5')
+        axs2[4].plot(l_custom(0.1,depth_lock,params[0],params[2],params[1],params[3]),depth_lock, label = 'e(z) = 0.1')
         axs2[4].legend(loc = 'lower left')
         axs2[4].set_title("Lock-in-function", fontsize=8)
         #axs2[3].set_ylim(depth_obs[-1],depth_obs[0])
@@ -950,6 +961,9 @@ entry_c2_d.insert(0, "1.0")
 
 c1_var_forvard.trace_add("write", field_change_forvard)
 c2_var_forvard.trace_add("write", field_change_forvard)
+
+c1_var_forvard.trace_add("write", depth_changed_forvard)
+c2_var_forvard.trace_add("write", depth_changed_forvard)
 
 compute_button2 = tk.Button(left_frame2, text="Compute", command=direct_comptue)
 compute_button2.grid(row=9, columnspan=2, pady=10)
