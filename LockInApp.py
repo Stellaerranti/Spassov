@@ -601,6 +601,13 @@ def field_change_forvard(*args):
         axs2[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         axs2[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         
+        if axs2[4].get_lines():
+            depth_changed_forvard(*args)
+            #axs2[4].set_yticks()
+            
+        #else:
+         #   axs2[4].set_ylim(10,0)
+        
         for ax in axs2[1:]:
             ax.tick_params(left=False)
             ax.set_yticklabels([])
@@ -634,12 +641,16 @@ def field_change_inverse(*args):
         axs[1].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         axs[0].set_ylim(max(depth_obs[-1],c2+1),min(depth_obs[0],c1-1))
         
+        
+        
         for ax in axs[1:]:
             ax.tick_params(left=False)
             ax.set_yticklabels([])
         
         figure.subplots_adjust(wspace=0.1)
         canvas.draw()
+        
+        
         
     except (ValueError, ZeroDivisionError) as e:
         return   
@@ -661,12 +672,13 @@ def depth_changed_forvard(*args):
             return 
         
         params = get_params_from_depths([d0,d1,d2,d3])
-        
+        '''
         if (abs(c2-c1) < 10):
             depth_lock = np.linspace(0,10,50)
         else:
-            depth_lock = np.linspace(0,c2,100)
-        
+            depth_lock = np.linspace(0,abs(c2-c1),100)
+            '''
+        depth_lock = np.linspace(0,10,50)
         axs2[4].clear()
         axs2[4].plot(l_custom(0.9,depth_lock,params[0],params[2],params[1],params[3]),depth_lock, label = 'e(z) = 0.9')
         axs2[4].plot(l_custom(0.5,depth_lock,params[0],params[2],params[1],params[3]),depth_lock, label = 'e(z) = 0.5')
@@ -962,8 +974,8 @@ entry_c2_d.insert(0, "1.0")
 c1_var_forvard.trace_add("write", field_change_forvard)
 c2_var_forvard.trace_add("write", field_change_forvard)
 
-c1_var_forvard.trace_add("write", depth_changed_forvard)
-c2_var_forvard.trace_add("write", depth_changed_forvard)
+#c1_var_forvard.trace_add("write", depth_changed_forvard)
+#c2_var_forvard.trace_add("write", depth_changed_forvard)
 
 compute_button2 = tk.Button(left_frame2, text="Compute", command=direct_comptue)
 compute_button2.grid(row=9, columnspan=2, pady=10)
