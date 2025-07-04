@@ -30,12 +30,23 @@ selected_optimization = "L-BFGS-B"
 c1 = 73.4
 c2 = 74.
 
+import os
+import sys
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 def create_image_label(frame, image_path, row, columnspan):
     global photo  # Используем глобальную переменную для хранения изображения
 
     # Загружаем изображение с помощью PIL
-    image = Image.open(image_path)
+    image = Image.open(resource_path(image_path))
     image = image.resize((200, 200))  # При необходимости изменяем размер изображения
     photo = ImageTk.PhotoImage(image)  # Сохраняем объект в глобальной переменной
 
