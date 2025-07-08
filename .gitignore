@@ -1,0 +1,8 @@
+*.toc
+*.zip
+*.pyc
+*.pkg
+*.pyz
+build/LockInApp/warn-LockInApp.txt
+build/LockInApp/xref-LockInApp.html
+dist/LockInApp.exe

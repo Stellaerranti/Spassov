@@ -1,0 +1,189 @@
+"""
+lockin_forward.py
+Forward model and synthetic-data generator for linear-lock-in palaeomagnetic inversions
+Requires: numpy, scipy
+"""
+
+import numpy as np
+from scipy.interpolate import interp1d
+
+# ----------------------------------------------------------------------
+# 0.  Load the measured lithology ratio e(z) once and build an interpolator
+#     ---------------------------------------------------------------
+#     File format expected: two columns, `depth(m)   e_ratio`
+#     Interpolation: nearest-neighbour (piece-wise constant).  Change
+#                    kind="linear" if you prefer linear interpolation.
+# ----------------------------------------------------------------------
+
+# ---------- EDIT THIS PATH IF NEEDED ----------------------------------
+E_FILE = "Spassovez.txt"         # <== EDIT
+# ----------------------------------------------------------------------
+
+_z_e, _e_e = np.loadtxt(E_FILE, unpack=True)
+_e_interp = interp1d(
+    _z_e,
+    _e_e,
+    kind="nearest",              # or "linear"
+    bounds_error=False,
+    fill_value=(_e_e[0], _e_e[-1]),
+)
+
+
+# ----------------------------------------------------------------------
+# 1.  Smooth lock-in profile λ(z)
+#     Replace this function if you have your own analytic form.
+#     Inputs:
+#       z        – 1-D numpy array of depths [m]
+#       depths   – tuple/list of four lock-in depths (d0<d1<d2<d3) [m]
+#       e_array  – 1-D numpy array of e(z) evaluated on *z*
+#     Output:
+#       λ(z)     – 1-D numpy array, same length as z
+# ----------------------------------------------------------------------
+
+def lock_in_lambda(z: np.ndarray, depths, e_array: np.ndarray) -> np.ndarray:
+    """
+    Piece-wise linear λ(z): 0 → e(z) in two linear ramps with rounded
+    logistic shoulders for smooth gradients.
+    """
+    d0, d1, d2, d3 = depths
+    λ = np.zeros_like(z)
+
+    # Logistic helper for smooth transitions (steepness s controls roundness)
+    def L(x, x0, s=30):          # logistic in depth
+        return 1.0 / (1.0 + np.exp(-s * (x - x0)))
+
+    # Normalised ramp from 0 to 1 between d0–d1 and 0 to 1 between d2–d3
+    up1 = (z - d0) / (d1 - d0)
+    up2 = (z - d2) / (d3 - d2)
+    up1 = np.clip(up1, 0, 1)
+    up2 = np.clip(up2, 0, 1)
+
+    # Blend ramps with logistic shoulders
+    λ_part = np.where(z < d2,
+                      up1 * e_array * L(z, (d0 + d1) / 2),
+                      e_array * (1 - (1 - up2) * L(z, (d2 + d3) / 2)))
+
+    λ = np.where(z <= d0, 0, λ_part)
+    λ = np.where(z >= d3, e_array, λ)
+
+    return λ
+
+
+# ----------------------------------------------------------------------
+# 2.  Forward model: magnetisation *M(z)* and polarity *P̂(z)*
+#     Inputs:
+#       z        – depth grid (monotonic increasing) [m]
+#       depths   – (d0,d1,d2,d3) lock-in depths [m]
+#       c1,c2    – reversal endpoints (Matuyama–Brunhes 59.8–60.1 m in Spassov)
+#       kappa    – tanh steepness; 30-50 keeps a sharp but differentiable sign
+#     Outputs:
+#       M, P_hat – 1-D arrays on *z*
+# ----------------------------------------------------------------------
+
+def forward_model(
+    z: np.ndarray,
+    depths,
+    c1: float,
+    c2: float,
+    kappa: float = 40.0,
+):
+    """Return magnetisation M(z) and smoothed polarity P̂(z)."""
+    e_array = _e_interp(z)                         # e(z) on this grid
+    λ = lock_in_lambda(z, depths, e_array)         # smoother lock-in profile
+
+    dλdz = np.gradient(λ, z)                       # derivative w.r.t. depth
+
+    # Tan-hyperbolic approximation of the field reversal (Spassov eq. 4.4)
+    H = -np.tanh(((c2 + c1) * (z - (c2 + c1) / 2)) / (c2 - c1))
+
+    # Convolution integral  (eq. 4.6):  M = λ + ∫ dλ/dζ · H(z-ζ) dζ
+    conv = np.convolve(dλdz, H[::-1], mode="full")[: len(z)] * (z[1] - z[0])
+
+    M = λ + conv
+    P_hat = np.tanh(kappa * M)
+
+    return M, P_hat
+
+
+# ----------------------------------------------------------------------
+# 3.  Synthetic-data generator
+# ----------------------------------------------------------------------
+
+def make_synthetic(
+    z: np.ndarray,
+    depths_true,
+    c1: float,
+    c2: float,
+    sigma_cm: float = 2.0,
+    flip_prob: float = 0.0,
+    kappa: float = 40.0,
+):
+    """
+    Create a synthetic polarity log with depth jitter and random bit flips.
+
+    Returns:
+        z_noisy  – depth grid with N(0,σ) jitter  [m]
+        P_obs    – ±1 observed polarity           [int]
+    """
+    _, P_true = forward_model(z, depths_true, c1, c2, kappa=kappa)
+
+    # depth jitter
+    z_noisy = z + np.random.normal(0, sigma_cm / 100.0, size=len(z))
+
+    # optional mis-identified flips
+    if flip_prob > 0:
+        mask = np.random.rand(len(z)) < flip_prob
+        P_true = P_true.copy()
+        P_true[mask] *= -1
+
+    return z_noisy, np.sign(P_true).astype(int)
+
+
+# ----------------------------------------------------------------------
+# 4.  Example usage
+# ----------------------------------------------------------------------
+
+if __name__ == "__main__":
+    # Depth grid for modelling (0 → 5 m, 5 mm spacing)
+    z_grid = np.arange(0, 5.0, 0.005)
+
+    # True lock-in depths for a synthetic test   (EDIT IF DESIRED)
+    d_true = (0.40, 1.00, 2.20, 3.60)
+
+    # Field-reversal endpoints (Matuyama–Brunhes striker depths)
+    C1, C2 = 59.8, 60.1               # <== EDIT if your depth frame differs
+
+    # --- Forward model sanity plot (magnetisation + polarity) ------------
+    import matplotlib.pyplot as plt
+
+    M, P_hat = forward_model(z_grid, d_true, C1, C2)
+
+    fig, ax1 = plt.subplots()
+    ax1.plot(z_grid, M, lw=1.0, label="M(z)")
+    ax1.set_xlabel("Depth (m)")
+    ax1.set_ylabel("Magnetisation (arb)")
+    ax2 = ax1.twinx()
+    ax2.plot(z_grid, P_hat, "r--", lw=0.8, label="P̂(z)")
+    ax2.set_ylabel("Polarity")
+    ax1.legend(loc="upper right")
+    ax2.legend(loc="lower right")
+    plt.tight_layout()
+    plt.show()
+
+    # --- Generate one synthetic observation ------------------------------
+    z_obs, P_obs = make_synthetic(z_grid, d_true, C1, C2,
+                                  sigma_cm=2.0, flip_prob=0.05)
+
+    # --- Save to disk (choose one format) --------------------------------
+    # 1) binary .npz  (compact, preserves dtype)
+    np.savez("synthetic_000.npz", z=z_obs, P=P_obs)
+
+    # 2) human-readable .txt  (larger; two columns depth, polarity!)
+    np.savetxt(
+        "synthetic_000.txt",
+        np.c_[z_obs, P_obs],
+        fmt=["%.4f", "%d"],
+        header="depth(m) polarity(+1/-1)",
+    )
+
+    print("Synthetic data written to synthetic_000.*")
